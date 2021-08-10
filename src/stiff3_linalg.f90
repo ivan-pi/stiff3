@@ -1,4 +1,4 @@
-module linalg
+module stiff3_linalg
 
   implicit none
   private

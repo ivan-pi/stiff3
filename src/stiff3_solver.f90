@@ -8,7 +8,7 @@
 !>
 module stiff3_solver
 
-  use linalg, only: lu, back
+  use stiff3_linalg, only: lu, back
 
   implicit none
   private
