@@ -1,0 +1,7 @@
+name = "stiff3"
+version = "0.1.0"
+license = "Apache-2.0"
+maintainer = "ivan.pribec@gmail.com"
+
+[build]
+link = ["lapack", "blas"]
