@@ -1,3 +1,6 @@
+! Copyright 2021 Ivan Pribec
+! SPDX-License-Identifier: Apache-2.0
+
 module stiff3_linalg
 
   implicit none
@@ -5,7 +8,8 @@ module stiff3_linalg
 
   public :: lu, back
 
-  !   !> LU - factorization of a matrix
+  !   !> Program for decomposing a matrix A to a lower and an upper
+  !   !> triangular form $ A = LU$.
   !   subroutine lu(n,ipiv,a)
   !     import dp
   !     integer, intent(in) :: n
@@ -20,8 +24,8 @@ module stiff3_linalg
   end interface
 
 
-  !   !> Performs back-substition
-  !   !> Used together with procedure lu, to calculate the solution
+  !   !> Back substitution algorithm for solution to $LUx = b$.
+  !   !> Used together with procedure `lu`, to calculate the solution
   !   !> of a system of linear equations
   !   subroutine back(n,ipiv,a,b)
   !     import dp

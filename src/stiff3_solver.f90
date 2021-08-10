@@ -1,9 +1,12 @@
-!> Semi-implicit Runge-Kutta method of order 3
+! Copyright 2021 Ivan Pribec
+! SPDX-License-Identifier: Apache-2.0
+
+!> Semi-implicit Runge-Kutta method of third order
 !>
-!> This is modified version of the code originally given in
+!> This is a modernized version of the code originally given in
 !>
 !>   Villadsen, J., & Michelsen, M. L. (1978). Solution of differential
-!>   equation models by polynomial approximation(Book). Prentice-Hall, Inc.,
+!>   equation models by polynomial approximation. Prentice-Hall, Inc.,
 !>   1978.
 !>
 module stiff3_solver
@@ -13,40 +16,46 @@ module stiff3_solver
   implicit none
   private
 
-  public :: stiff3
-  public :: stiff3_wp
-  public :: rhs_func, jacobian_func, output
+  public :: stiff3, stiff3_wp
+  public :: rhs_sub, jacobian_sub, output_sub
 
-  !> Constant defining precision of stiff3 reals
+  !> Kind parameter for working precision of stiff3 reals
   integer, parameter :: stiff3_wp = kind(1.0d0)
 
-  !> Working precision used internally
+  !> Working precision with short name for internal use
   integer, parameter :: wp = stiff3_wp
 
   abstract interface
     !> Function to evaluate the right-hand side of a system of ODEs.
     !> It is assumed the system of ODEs is autonomous, meaning that
     !> the independent variable x, does not appear explicitly.
-    subroutine rhs_func(n,y,f)
+    subroutine rhs_sub(n,y,f)
       import wp
       integer, intent(in) :: n
       real(wp), intent(in) :: y(n)
       real(wp), intent(inout) :: f(n)
     end subroutine
 
-    subroutine jacobian_func(n,y,df)
+    !> User supplied subprogram for evaluation of the Jacobian.
+    subroutine jacobian_sub(n,y,df)
       import wp
       integer, intent(in) :: n
       real(wp), intent(in) :: y(n)
       real(wp), intent(inout) :: df(n,n)
     end subroutine
 
-    subroutine output(x,y,iha,qa)
+    !> User supplied subprogram for output.
+    subroutine output_sub(x,y,iha,qa)
       import wp
       real(wp), intent(in) :: x
+        !! Current value of the independent variable
       real(wp), intent(in) :: y(:)
+        !! Current value of the dependent variable vector
       integer, intent(in) :: iha
+        !! Number of bisections (unsuccesful integrations) in
+        !! the current step
       real(wp), intent(in) :: qa
+        !! Step-length acceleration factor
     end subroutine
 
   end interface
@@ -58,22 +67,24 @@ contains
   !       or after exiting the routine.
 
   !> Semi-implicit Runge-Kutta integrator routine
+  !
   subroutine stiff3(n,fun,dfun,out,nprint,x0,x1,h0,eps,w,y)
     integer, intent(in) :: n
       !! Number of equations to be integrated.
-    procedure(rhs_func) :: fun
+    procedure(rhs_sub) :: fun
       !! User supplied subprogram for function evaluation.
-    procedure(jacobian_func) :: dfun
+    procedure(jacobian_sub) :: dfun
       !! User supplied subprogram for evaluation of the Jacobian.
-    procedure(output) :: out
+    procedure(output_sub) :: out
       !! User supplied subprogram for output.
     integer, intent(in) :: nprint
       !! Printing interval. For `nprint = k` the solution is only printed.
       !! at every kth step.
     real(wp), intent(in) :: x0, x1
-      !! Limits of the independent variable.
+      !! Limits of the independent variable between which the differential
+      !! equation is solved.
     real(wp), intent(inout) :: h0
-      !! suggested initial half-step length. On exit `h0` contains suggested
+      !! Suggested initial half-step length. On exit `h0` contains suggested
       !! value of half-step length for continued integration beyond `x1`.
     real(wp), intent(in) :: eps, w(n)
       !! Tolerance parameters.
@@ -218,12 +229,12 @@ contains
   end subroutine
 
 
-  !> Performs a single step of the semi-implicit Runge-Kutta method of
-  !> order 3
+  !> Single-step semi-implicit integration
+  !
   subroutine sirk3(n,fun,ipiv,f,y,yk1,yk2,df,h)
     integer, intent(in) :: n
       !! Size of the system of ODEs
-    procedure(rhs_func) :: fun
+    procedure(rhs_sub) :: fun
       !! Function to evaluate the right hand side
     integer, intent(inout) :: ipiv(n)
       !! Integer workspace used to store pivots in the LU factorization
