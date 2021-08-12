@@ -4,7 +4,7 @@ module vanpol
 
   implicit none
 
-  real(wp), parameter :: K = 1000
+  real(wp), parameter :: K = 10
 
 contains
 
@@ -31,7 +31,7 @@ end module
 program main
 
   use stiff3_solver, only: wp => stiff3_wp, stiff3
-  use van_pol, only: fun, dfun
+  use vanpol, only: fun, dfun
 
   implicit none
 
@@ -53,7 +53,7 @@ program main
 
 ! time interval
   x0 = 0.0_wp
-  x1 = 3000.0_wp
+  x1 = 100.0_wp
 
   call output(x0,y,0,0.0_wp)
   call stiff3(n,fun,dfun,output,nprint,x0,x1,h0,eps,w,y)
@@ -66,7 +66,7 @@ contains
     integer, intent(in) :: iha
     real(wp), intent(in) :: qa
 
-    print '(3(F12.7,2X),I8,2X,G0)', x, y(1), y(2), iha, qa
+    print '(3(E18.12,2X),I4,2X,E18.12)', x, y(1), y(2), iha, qa
   end subroutine
 
 end program

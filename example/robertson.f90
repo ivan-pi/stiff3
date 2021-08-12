@@ -78,7 +78,7 @@ contains
     real(wp), intent(in) :: qa
     real(wp) :: y2
     y2 = 1.e4_wp*y(2)
-    print '(4(F12.7,2X),I8,2X,G0)', x, y(1), y2, y(3), iha, qa
+    print '(4(E19.12,2X),I4,2X,E19.12)', x, y(1), y2, y(3), iha, qa
   end subroutine
 
 end program
