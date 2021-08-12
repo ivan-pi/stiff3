@@ -251,7 +251,7 @@ contains
     real(wp), intent(in) :: h
       !! Step size of the independent variable
 
-    integer :: i, j
+    integer :: i
 
     real(wp), parameter :: a  =  0.4358665215084589_wp
     real(wp), parameter :: r1 =  1.037609496131859_wp
@@ -260,12 +260,18 @@ contains
     real(wp), parameter :: r4 = -0.2423378912600452_wp
 
     real(wp), parameter :: DF_TOL = 1.0e-12_wp
+      !! Jacobian cutoff (elements smaller than DF_TOL are set to zero)
+
+    !
+    ! form matrix (I - h a J)
+    !
+    where (abs(df) > DF_TOL)
+      df = -h*a*df
+    elsewhere
+      df = 0.0_wp
+    end where
 
     do i = 1, n
-      do j = 1, n
-        df(i,j) = -h * a * df(i,j)
-        if (abs(df(i,j)) < DF_TOL) df(i,j) = 0.0_wp
-      end do
       df(i,i) = df(i,i) + 1.0_wp
     end do
 
