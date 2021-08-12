@@ -29,11 +29,11 @@ program vanpol
   w = 1
 ! time interval
   x0 = 0.0_wp
-  x1 = 3000.0_wp  
+  x1 = 3000.0_wp
 ! output initial condition
   call out(x0,y,0,0.0_wp)
 ! integrate system of ODEs
-  call stiff3(n,fun,jac,out,nprint,x0,x1,h0,eps,w,y)
+  call stiff3(n,fun,jac,out,nout,x0,x1,h0,eps,w,y)
 
 contains
 
@@ -55,12 +55,12 @@ contains
     df(2,2) = mu*(1.0_wp - y(1)**2)
   end subroutine
 
-  subroutine out(t,y,ih,q)
-    real(wp), intent(in) :: x
+  subroutine out(t,y,ih,qa)
+    real(wp), intent(in) :: t
     real(wp), intent(in) :: y(:)
-    integer, intent(in) :: iha
+    integer, intent(in) :: ih
     real(wp), intent(in) :: qa
-    write(*,'(3(F12.7,2X),I8,2X,G0)') x, y(1), y(2), iha, qa
+    write(*,'(3(E18.12,2X),I4,2X,G0)') t, y(1), y(2), ih, qa
   end subroutine
 
 end program
