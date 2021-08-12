@@ -14,7 +14,14 @@ To use this project you need to have
 * BLAS and LAPACK libraries
 * [Fortran package manager (fpm)](https://github.com/fortran-lang/fpm)
 
-To build the library invoke fpm in the project root with
+To use `stiff3` include it as a dependency in your fpm package manifest
+
+```toml
+[dependencies]
+stiff3.git = "https://github.com/ivan-pi/stiff3"
+```
+
+To build the library (as the main project) invoke fpm in the project root with
 
 ```
 fpm build
@@ -23,13 +30,6 @@ Two examples called `robertson` and `vanpol` are provided. They can be run with 
 
 ```
 fpm run --example <name>
-```
-
-To use `stiff3` include it as a dependency in your package manifest
-
-```toml
-[dependencies]
-stiff3.git = "https://github.com/ivan-pi/stiff3"
 ```
 
 ## Usage
