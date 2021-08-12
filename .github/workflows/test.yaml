@@ -41,3 +41,10 @@ jobs:
       uses: fortran-lang/setup-fpm@v3
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Run example programs (release)
+      run: |
+        gfortran --version
+        fpm build --profile release
+        fpm run --example robertson
+        fpm run --example vanpol
