@@ -6,6 +6,32 @@
 
 This repository provides a refactored version with a simplified procedural interface.
 
+## Installation
+
+To use this project you need to have
+
+* a recent Fortran compiler
+* BLAS and LAPACK libraries
+* [Fortran package manager (fpm)](https://github.com/fortran-lang/fpm)
+
+To build the library invoke fpm in the project root with
+
+```
+fpm build
+```
+Two examples called `robertson` and `vanpol` are provided. They can be run with the the command
+
+```
+fpm run --example <name>
+```
+
+To use `stiff3` include it as a dependency in your package manifest
+
+```toml
+[dependencies]
+stiff3.git = "https://github.com/ivan-pi/stiff3"
+```
+
 ## Usage
 
 Basic use of the solver is demonstrated using the [Van der Pol oscillator](https://en.wikipedia.org/wiki/Van_der_Pol_oscillator):
@@ -17,7 +43,7 @@ program vanpol
   implicit none
 
   integer, parameter :: n = 2, nout = 1
-  real(wp), parameter :: mu = 1000.0_wp
+  real(wp), parameter :: mu = 10.0_wp
   real(wp) :: y(n), w(n), x0, x1, h0, eps
 
 ! initial value
@@ -29,7 +55,7 @@ program vanpol
   w = 1
 ! time interval
   x0 = 0.0_wp
-  x1 = 3000.0_wp
+  x1 = 100.0_wp
 ! output initial condition
   call out(x0,y,0,0.0_wp)
 ! integrate system of ODEs
@@ -66,12 +92,6 @@ contains
 end program
 ```
 
-## Requirements
-
-Minimal requirements include:
-* a recent Fortran compiler
-* BLAS and LAPACK libraries
-
 ## Method
 
 The semi-implicit Runge-Kutta method used by `stiff3` was first published in
@@ -79,6 +99,9 @@ The semi-implicit Runge-Kutta method used by `stiff3` was first published in
 > Caillaud, J. B., & Padmanabhan, L. (1971). An improved semi-implicit Runge-Kutta method for stiff systems. The Chemical Engineering Journal, 2(4), 227-232. https://doi.org/10.1016/0300-9467(71)85001-3
 
 The adaptive stepsize selection strategy is described in Villadsen & Michelsen (1978), Section 8.2.3, pages 314 - 317.
+
+The error tolerance values `eps` (scalar) and `w` (vector) are used to keep the local error estimate of component `i` smaller than `(1 + abs(y(i)))*eps/w(i)`.
+
 
 ## Contributing
 
@@ -90,5 +113,4 @@ For students interested in CSE, here are some contribution ideas:
 - Continuous (dense) output of variables
 - Extend `stiff3` to non-autonomous systems of ODE's
 - Advanced stepsize control settings
-- Improve the repository and code documentation
 - Write a tutorial on how to use `stiff3`
