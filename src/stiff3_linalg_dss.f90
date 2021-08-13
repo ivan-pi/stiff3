@@ -8,7 +8,7 @@ module stiff3_linalg_dss_helpers
     MKL_DSS_MSG_LVL_ERR, MKL_DSS_TERM_LVL_ERR, MKL_DSS_STRUCTURE_ERR, &
     MKL_DSS_REORDER_ERR, MKL_DSS_VALUES_ERR, &
     MKL_DSS_STATISTICS_INVALID_MATRIX, MKL_DSS_STATISTICS_INVALID_STATE, &
-    MKL_DSS_STATISTICS_INVALID_STRING,
+    MKL_DSS_STATISTICS_INVALID_STRING
 
   implicit none
   private
@@ -70,7 +70,7 @@ contains
       str = "STATISTICS_INVALID_STRING"
     end select
 
-  end subroutine
+  end function
 
 end module
 
@@ -85,7 +85,9 @@ module stiff3_linalg_dss
     dss_solve_real, &
     dss_delete, &
     dss_statistics, &
-    mkl_cvt_to_null_terminated_str
+    mkl_cvt_to_null_terminated_str, &
+    MKL_DSS_GET_ORDER, MKL_DSS_INDEFINITE, MKL_DSS_DEFAULTS, &
+    MKL_DSS_SUCCESS
 
   use stiff3_linalg_dss_helpers, only: &
     process_retval, retval_to_string
@@ -95,18 +97,12 @@ module stiff3_linalg_dss
 
   public :: dss_solver, create, destroy
 
-  type :: dss_solver
-    private
-    integer :: nrows, ncols, nnz
-    type(mkl_dss_handle) :: handle
-    integer, allocatable :: perm(:)
+  integer, parameter :: dp = kind(1.0d0)
 
-  contains
-    final :: destroy
-    procedure :: factorize
-    procedure :: solve_v, solve_m
-    generic :: solve => solve_v, solve_m
-    procedure :: get_perm
+  type :: csr_mat
+    integer :: nrows, ncols, nnz
+    integer, allocatable :: ia(:), ja(:)
+    real(dp), allocatable :: a(:)
   end type
 
   interface create
@@ -114,14 +110,30 @@ module stiff3_linalg_dss
   end interface
 
   interface destroy
-    module procedure :: destroy_dss_solver
+    module procedure destroy_dss_solver
   end interface
+
+  type :: dss_solver
+    private
+    integer :: nrows, ncols, nnz
+    type(mkl_dss_handle) :: handle
+    integer, allocatable :: perm(:)
+    type(csr_mat), pointer :: mat => null()
+  contains
+    ! final :: destroy
+    procedure :: factorize
+    procedure :: solve_v, solve_m
+    generic :: solve => solve_v, solve_m
+    procedure :: get_perm => get_permutation_vector
+  end type
+
+
 
 contains
 
-  subroutine create_dss_solver(self,ierr,errmsg)
+  subroutine create_dss_solver(self,mat,ierr,errmsg)
     type(dss_solver), intent(out) :: self
-    logical, intent(in), optional :: saveperm
+    type(csr_mat), intent(in) :: mat
     integer, intent(out), optional :: ierr
     character(len=*), intent(out), optional :: errmsg
 
@@ -145,7 +157,7 @@ contains
     ! communicate the location of non-zero elements (sparsity pattern)
     !
     ret = dss_define_structure(self%handle,&
-      opt,rowIndex,nRows,nCols,columns,nNonzeros)
+      opt,mat%ia,mat%nrows,mat%nrows,mat%ja,mat%nnz)
     call process_retval('dss_define_structure',ret,ierr,errmsg)
 
     !
@@ -157,19 +169,19 @@ contains
   end subroutine
 
 
-  subroutine get_permutation_vector(self,perm)
-    type(dss_solver), intent(in) :: self
-    integer, intent(out) :: perm(solver%nrows)
+  subroutine get_permutation_vector(self,perm,ierr,errmsg)
+    class(dss_solver), intent(inout) :: self
+    integer, intent(out) :: perm(self%nrows)
     integer, intent(out), optional :: ierr
     character(len=*), intent(out), optional :: errmsg
     integer, parameter :: opt = MKL_DSS_GET_ORDER
-
+    integer :: ret
     ret = dss_reorder(self%handle,opt,perm)
     call process_retval('dss_reorder',ret,ierr,errmsg)
   end subroutine
 
   subroutine factorize(self,rvalues,ierr,errmsg)
-    type(dss_solver), intent(inout) :: self
+    class(dss_solver), intent(inout) :: self
     real(dp), intent(in) :: rvalues(:)
       ! Size should be equal to self%nnz
     integer, intent(out), optional :: ierr
@@ -182,7 +194,7 @@ contains
     ret = dss_factor_real(self%handle,opt,rvalues)
     call process_retval("dss_factor_real",ret,ierr,errmsg)
 
-  end subroutine factor
+  end subroutine factorize
 
   subroutine solve_v(self,rhs,sol,ierr,errmsg)
     class(dss_solver), intent(inout) :: self
@@ -207,16 +219,17 @@ contains
 
   subroutine solve_m(self,rhs,sol,ierr,errmsg)
     class(dss_solver), intent(inout) :: self
-    real(dp), intent(in), target :: rhs(:,:)
-    real(dp), intent(out), target :: sol(:,:)
+    real(dp), intent(in), target, contiguous :: rhs(:,:)
+    real(dp), intent(out), target, contiguous :: sol(:,:)
     integer, intent(out), optional :: ierr
     character(len=*), intent(out), optional :: errmsg
 
-    integer :: nrhs, nptr
-    real(dp) :: rhsptr(:), solptr(:)
+    integer :: nrhs, nptr, opt, ret
+    real(dp), pointer :: rhsptr(:) => null()
+    real(dp), pointer :: solptr(:) => null()
 
     nrhs = size(rhs,2)
-    nptr = solver%nrows * nrhs
+    nptr = self%nrows * nrhs
     rhsptr(1:nptr) => rhs
     solptr(1:nptr) => sol
 
@@ -231,9 +244,121 @@ contains
 
   end subroutine
 
-  subroutine stats(solver)
+  subroutine stats(self, &
+      ReorderTime, FactorTime, SolveTime, &
+      Determinant, Inertia, Flops, &
+      Peakmem, Factormem, Solvemem, &
+      ierr,errmsg)
+    class(dss_solver), intent(in) :: self
 
-    call dss_statistics(handle,opt,statArr,retValues)
+    real(dp), intent(out), optional :: ReorderTime
+    real(dp), intent(out), optional :: FactorTime
+    real(dp), intent(out), optional :: SolveTime
+    real(dp), intent(out), optional :: Determinant
+    real(dp), intent(out), optional :: Inertia
+    real(dp), intent(out), optional :: Flops
+    real(dp), intent(out), optional :: Peakmem
+    real(dp), intent(out), optional :: Factormem
+    real(dp), intent(out), optional :: Solvemem
+
+    integer, intent(out), optional :: ierr
+    character(len=*), intent(out), optional :: errmsg
+    integer :: opt, ret
+
+    integer, parameter :: nstat = 9
+    integer :: nret, i
+    real(dp), allocatable :: retValue(:)
+    character(len=128) :: srcstr
+
+    integer, allocatable :: deststr(:)
+
+    integer :: iopt(nstat)
+    character(len=12), parameter :: options(nstat) = &
+      [ character(len=12) :: &
+        "reordertime", "factortime","solvetime", &
+        "determinant", "inertia", "flops", "peakmem", &
+        "factormem", "solvemem" &
+      ]
+
+    nret = 0
+    srcstr = ''
+
+    if (present(ReorderTime)) then
+      nret = nret + 1
+      iopt(nret) = 1
+    end if
+    if (present(FactorTime)) then
+      nret = nret + 1
+      iopt(nret) = 2
+    end if
+    if (present(SolveTime)) then
+      nret = nret + 1
+      iopt(nret) = 3
+    end if
+    if (present(Determinant)) then
+      nret = nret + 1
+      iopt(nret) = 4
+    end if
+    if (present(Inertia)) then
+      nret = nret + 1
+      iopt(nret) = 5
+    end if
+    if (present(Flops)) then
+      nret = nret + 1
+      iopt(nret) = 6
+    end if
+    if (present(Peakmem)) then
+      nret = nret + 1
+      iopt(nret) = 7
+    end if
+    if (present(Factormem)) then
+      nret = nret + 1
+      iopt(nret) = 8
+    end if
+    if (present(Solvemem)) then
+      nret = nret + 1
+      iopt(nret) = 9
+    end if
+
+    if (nret > 0) then
+      allocate(retValue(nret))
+      write(srcstr,'(*(G0,:,","))') (trim(options(iopt(i))),i = 1, nret)
+
+      allocate(deststr(len(srcstr)))
+      call mkl_cvt_to_null_terminated_str(deststr,size(deststr),srcstr)
+
+      ret = dss_statistics(self%handle,opt,deststr,retValue)
+      call process_retval("dss_statistics",ret,ierr,errmsg)
+      if (ret == MKL_DSS_SUCCESS) then
+        do i = 1, nret
+          select case(iopt(i))
+          case(1)
+            ReorderTime = retValue(i)
+          case(2)
+            FactorTime = retValue(i)
+          case(3)
+            SolveTime = retValue(i)
+          case(4)
+            Determinant = retValue(i)
+          case(5)
+            Inertia = retValue(i)
+          case(6)
+            Flops = retValue(i)
+          case(7)
+            Peakmem = retValue(i)
+          case(8)
+            Factormem = retValue(i)
+          case(9)
+            Solvemem = retValue(i)
+          end select
+        end do
+      end if
+    else
+      ! no stats asked for, do nothing
+      ret = MKL_DSS_SUCCESS
+      call process_retval("dss_statistics",ret,ierr,errmsg)
+    end if
+
   end subroutine
 
   subroutine destroy_dss_solver(self,ierr,errmsg)
@@ -241,7 +366,7 @@ contains
     integer, intent(out), optional :: ierr
     character(len=*), intent(out), optional :: errmsg
 
-    integer :: opt
+    integer :: opt, ret
     opt = MKL_DSS_DEFAULTS
 
     ret = dss_delete(self%handle,opt)
@@ -254,6 +379,8 @@ end module
 module stiff3_solver_s
 
   implicit none
+
+  integer, parameter :: wp = kind(1.0d0)
 
   abstract interface
     !> Function to evaluate the right-hand side of a system of ODEs.
