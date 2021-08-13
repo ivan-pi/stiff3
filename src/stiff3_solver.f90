@@ -278,15 +278,15 @@ contains
     !
     ! perform triangular decomposition and evaluate k1
     !
-    call lu(n,ipiv,df)
-    call back(n,ipiv,df,f)
+    call lu(df,ipiv)
+    call back(df,f,ipiv)
 
     do i = 1, n
       yk1(i) = h*f(i)
       yk2(i) = y(i) + 0.75_wp * yk1(i)
     end do
     call fun(n,yk2,f)
-    call back(n,ipiv,df,f)
+    call back(df,f,ipiv)
 
     !
     ! evaluate k2
@@ -301,7 +301,7 @@ contains
     ! evaluate k3
     ! for convenience stored in yk2
     !
-    call back(n,ipiv,df,yk2)
+    call back(df,yk2,ipiv)
     do i = 1, n
       y(i) = y(i) + yk2(i)
     end do
