@@ -259,18 +259,10 @@ contains
     real(wp), parameter :: r3 = -0.6302020887244523_wp
     real(wp), parameter :: r4 = -0.2423378912600452_wp
 
-    real(wp), parameter :: DF_TOL = 1.0e-12_wp
-      !! Jacobian cutoff (elements smaller than DF_TOL are set to zero)
-
     !
     ! form matrix (I - h a J)
     !
-    where (abs(df) > DF_TOL)
-      df = -h*a*df
-    elsewhere
-      df = 0.0_wp
-    end where
-
+    df = -h*a*df
     do i = 1, n
       df(i,i) = df(i,i) + 1.0_wp
     end do
