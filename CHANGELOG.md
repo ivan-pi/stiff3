@@ -6,7 +6,7 @@
 
 ### Added
 
-- The generic interface `back` and `lu` can accept both a single or multiple right-hand sides under a new interface.
+- The generic interface `back` and `lu` can accept both a single or multiple right-hand sides under a new interface (#2).
 
 ### Fixed
 
