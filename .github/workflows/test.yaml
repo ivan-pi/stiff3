@@ -8,12 +8,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-11]
+        gcc_v: [9]
         include:
         - os: ubuntu-latest
-          gcc_v: 9
-        - os: macos-latest
-          gcc_v: 9
+          os-arch: linux-x86_64
+          release-flags: --flag '--static -g -fbacktrace -O2'
+        - os: macos-11
+          os-arch: macos-x86_64
+          release-flags: --flag '-g -fbacktrace -O2'
 
     env:
       FC: gfortran
@@ -38,13 +41,13 @@ jobs:
         --slave /usr/bingcov gcov /usr/bin/gcov-${GCC_V}
 
     - name: Install fpm
-      uses: fortran-lang/setup-fpm@v3
+      uses: fortran-lang/setup-fpm@v5
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Run example programs (release)
       run: |
         gfortran --version
-        fpm build --profile release
+        fpm build ${{ matrix.release-flags }}
         fpm run --example robertson
         fpm run --example vanpol
