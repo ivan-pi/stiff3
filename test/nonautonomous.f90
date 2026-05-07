@@ -5,7 +5,7 @@ program nonautonomous
   implicit none
 
   integer, parameter :: n = 1, nprint = 100
-  real(wp), parameter :: atol = 5.0e-6_wp
+  real(wp), parameter :: atol = 5.0e-6_wp ! accounts for method/BLAS/compiler variation
   real(wp) :: y(n), w(n), x0, x1, h0, eps, y_exact
 
   y = [0.0_wp]
