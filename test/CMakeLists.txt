@@ -1,0 +1,5 @@
+foreach(test_program ode_linear_decay ode_order)
+  add_executable(${test_program} ${test_program}.f90)
+  target_link_libraries(${test_program} PRIVATE stiff3)
+  add_test(NAME ${test_program} COMMAND ${test_program})
+endforeach()
