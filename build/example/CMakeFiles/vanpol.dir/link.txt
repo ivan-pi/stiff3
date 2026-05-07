@@ -1,1 +1,0 @@
-/usr/bin/f95 -Wl,--dependency-file=CMakeFiles/vanpol.dir/link.d -O3 CMakeFiles/vanpol.dir/vanpol.f90.o -o vanpol  ../src/libstiff3.a /usr/lib/x86_64-linux-gnu/liblapack.so /usr/lib/x86_64-linux-gnu/libblas.so

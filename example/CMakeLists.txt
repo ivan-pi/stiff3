@@ -1,4 +1,4 @@
-foreach(example robertson vanpol)
+foreach(example robertson vanpol lorenz predator_prey)
   add_executable(${example} ${example}.f90)
   target_link_libraries(${example} PRIVATE stiff3)
   add_test(NAME ${example} COMMAND ${example})
