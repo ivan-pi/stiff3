@@ -26,7 +26,7 @@ To build the library (as the main project) invoke fpm in the project root with
 ```
 fpm build
 ```
-Four examples called `robertson`, `vanpol`, `lorenz`, and `predator_prey` are provided. They can be run with the the command
+Four examples called `robertson`, `vanpol`, `lorenz`, and `predator_prey` are provided. They can be run with the command
 
 ```
 fpm run --example <name>
