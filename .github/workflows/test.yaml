@@ -3,6 +3,24 @@ name: test
 on: [push, pull_request]
 
 jobs:
+  cmake:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install GFortran and LAPACK
+      run: sudo apt-get install -y gfortran liblapack-dev libblas-dev
+
+    - name: Configure
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build
+      run: cmake --build build
+
+    - name: Test
+      run: ctest --test-dir build --output-on-failure
+
   gfortran-nix:
     runs-on: ${{ matrix.os }}
     strategy:
