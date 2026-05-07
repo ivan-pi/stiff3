@@ -294,6 +294,8 @@ contains
     yaug(1) = x0
     yaug(2:) = y
 
+    ! x' = 1 is exact, so the augmented x-component is excluded from
+    ! error-based step-size control.
     waug(1) = 0.0_wp
     waug(2:) = w
 
@@ -312,8 +314,9 @@ contains
     end subroutine
 
     ! Augmented Jacobian:
-    ! [0      0 ]
-    ! [df/dx df/dy]
+    ! dfi(1,:)   = 0
+    ! dfi(2:,1)  = df/dx
+    ! dfi(2:,2:) = df/dy
     subroutine jac_aug(naug,yi,dfi)
       integer, intent(in) :: naug
       real(wp), intent(in) :: yi(naug)
