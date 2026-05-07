@@ -292,15 +292,15 @@ contains
     real(wp) :: yaug(n+1), waug(n+1)
 
     yaug(1) = x0
-    yaug(2:) = y
+    yaug(2:n+1) = y
 
     ! x' = 1 is exact, so the augmented x-component is excluded from
     ! error-based step-size control.
     waug(1) = 0.0_wp
-    waug(2:) = w
+    waug(2:n+1) = w
 
     call stiff3_autonomous(n+1,fun_aug,jac_aug,out_aug,nprint,x0,x1,h0,eps,waug,yaug)
-    y = yaug(2:)
+    y = yaug(2:n+1)
 
   contains
 
