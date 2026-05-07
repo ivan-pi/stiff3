@@ -4,7 +4,7 @@ program nonautonomous
 
   implicit none
 
-  integer, parameter :: n = 1, nout = 1000000
+  integer, parameter :: n = 1, nout = 100
   real(wp), parameter :: atol = 5.0e-6_wp
   real(wp) :: y(n), w(n), x0, x1, h0, eps, y_exact
 
