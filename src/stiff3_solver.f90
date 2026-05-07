@@ -306,8 +306,8 @@ contains
       integer, intent(in) :: naug
       real(wp), intent(in) :: yi(naug)
       real(wp), intent(inout) :: fi(naug)
-      call fun(n,yi(1),yi(2:),fi(2:))
       fi(1) = 1.0_wp
+      call fun(n,yi(1),yi(2:),fi(2:))
     end subroutine
 
     subroutine jac_aug(naug,yi,dfi)
