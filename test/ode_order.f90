@@ -13,6 +13,8 @@ program ode_order
   integer :: i
 
   w = 1.0_wp
+  ! Use a very large tolerance so the order check focuses on the
+  ! Runge-Kutta discretization error instead of tolerance-driven bisections.
   eps = 1.0e6_wp
 
   do i = 1, size(hs)
