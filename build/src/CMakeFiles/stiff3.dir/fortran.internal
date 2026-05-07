@@ -1,0 +1,4 @@
+# The fortran modules provided by this target.
+provides
+ stiff3_linalg.mod
+ stiff3_solver.mod
