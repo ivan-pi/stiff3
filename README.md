@@ -1,36 +1,69 @@
 # stiff3
 
-`stiff3` is a Fortran subprogram for solving stiff autonomous systems of ordinary differential equations (ODE's) using a semi-implicit Runge-Kutta method with three steps (SIRK3). The `stiff3` source code was originally published in the work:
+`stiff3` is a Fortran library for solving stiff autonomous systems of ordinary differential equations (ODEs) using a Rosenbrock-type (semi-implicit Runge-Kutta) method of third order. The `stiff3` source code was originally published in the work:
 
 > Villadsen, J., & Michelsen, M. L. (1978). *Solution of differential equation models by polynomial approximation*. Prentice-Hall, Inc.
 
 This repository provides a refactored version with a simplified procedural interface.
 
+## Features
+
+- Third-order Rosenbrock-type (semi-implicit Runge-Kutta) integrator suitable for stiff ODE systems
+- Adaptive stepsize control with error tolerance per component
+- Requires a user-supplied Jacobian (exact or approximate)
+- Depends on BLAS and LAPACK for linear algebra operations
+- Supports two build systems: [CMake](https://cmake.org/) and [Fortran Package Manager (fpm)](https://github.com/fortran-lang/fpm)
+
 ## Installation
 
 To use this project you need to have
 
-* a recent Fortran compiler
-* BLAS and LAPACK libraries
-* [Fortran package manager (fpm)](https://github.com/fortran-lang/fpm)
+* a recent Fortran compiler (e.g. GFortran 9+)
+* BLAS and LAPACK libraries (e.g. OpenBLAS or the reference implementation)
 
-To use `stiff3` include it as a dependency in your fpm package manifest
+### Using CMake
+
+Configure, build, and run the tests with:
+
+```sh
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+To install the library to a custom prefix:
+
+```sh
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/path/to/install
+cmake --build build
+cmake --install build
+```
+
+### Using fpm
+
+Install the [Fortran Package Manager](https://github.com/fortran-lang/fpm) and then build the library from the project root with:
+
+```sh
+fpm build
+```
+
+To use `stiff3` as a dependency in your own fpm project, add it to your `fpm.toml`:
 
 ```toml
 [dependencies]
 stiff3.git = "https://github.com/ivan-pi/stiff3"
 ```
 
-To build the library (as the main project) invoke fpm in the project root with
+### Running the examples
 
-```
-fpm build
-```
-Two examples called `robertson` and `vanpol` are provided. They can be run with the the command
+Two example programs called `robertson` and `vanpol` are provided. With fpm they can be run with:
 
+```sh
+fpm run --example robertson
+fpm run --example vanpol
 ```
-fpm run --example <name>
-```
+
+With CMake, the compiled executables are placed in the `build/example/` directory and can be run directly or via CTest.
 
 ## Usage
 
@@ -94,14 +127,15 @@ end program
 
 ## Method
 
-The semi-implicit Runge-Kutta method used by `stiff3` was first published in
+`stiff3` implements a **Rosenbrock-type** (also known as semi-implicit Runge-Kutta) method. Rosenbrock methods linearize the implicit equations of a standard implicit Runge-Kutta scheme, requiring only a single LU factorization of the Jacobian per step. This makes them efficient for stiff problems while avoiding the nonlinear iterations of fully implicit methods.
 
-> Caillaud, J. B., & Padmanabhan, L. (1971). An improved semi-implicit Runge-Kutta method for stiff systems. The Chemical Engineering Journal, 2(4), 227-232. https://doi.org/10.1016/0300-9467(71)85001-3
+The specific three-stage semi-implicit Runge-Kutta method (SIRK3) used by `stiff3` was first published in:
 
-The adaptive stepsize selection strategy is described in Villadsen & Michelsen (1978), Section 8.2.3, pages 314 - 317.
+> Caillaud, J. B., & Padmanabhan, L. (1971). An improved semi-implicit Runge-Kutta method for stiff systems. *The Chemical Engineering Journal*, 2(4), 227–232. https://doi.org/10.1016/0300-9467(71)85001-3
+
+The adaptive stepsize selection strategy is described in Villadsen & Michelsen (1978), Section 8.2.3, pages 314–317.
 
 The error tolerance values `eps` (scalar) and `w` (vector) are used to keep the local error estimate of component `i` smaller than `(1 + abs(y(i)))*eps/w(i)`.
-
 
 ## Contributing
 
@@ -111,6 +145,6 @@ For students interested in CSE, here are some contribution ideas:
 - Support for banded or sparse Jacobian matrices
 - Use BLAS kernels for vector operations
 - Continuous (dense) output of variables
-- Extend `stiff3` to non-autonomous systems of ODE's
+- Extend `stiff3` to non-autonomous systems of ODEs
 - Advanced stepsize control settings
 - Write a tutorial on how to use `stiff3`
