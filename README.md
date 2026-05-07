@@ -1,6 +1,6 @@
 # stiff3
 
-`stiff3` is a Fortran subprogram for solving stiff autonomous systems of ordinary differential equations (ODE's) using a semi-implicit Runge-Kutta method with three steps (SIRK3). The `stiff3` source code was originally published in the work:
+`stiff3` is a Fortran subprogram for solving stiff systems of ordinary differential equations (ODE's) using a semi-implicit Runge-Kutta method with three steps (SIRK3). Both autonomous and non-autonomous systems are supported through overloaded `stiff3` interfaces. The `stiff3` source code was originally published in the work:
 
 > Villadsen, J., & Michelsen, M. L. (1978). *Solution of differential equation models by polynomial approximation*. Prentice-Hall, Inc.
 
@@ -111,6 +111,5 @@ For students interested in CSE, here are some contribution ideas:
 - Support for banded or sparse Jacobian matrices
 - Use BLAS kernels for vector operations
 - Continuous (dense) output of variables
-- Extend `stiff3` to non-autonomous systems of ODE's
 - Advanced stepsize control settings
 - Write a tutorial on how to use `stiff3`

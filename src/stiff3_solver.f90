@@ -18,12 +18,18 @@ module stiff3_solver
 
   public :: stiff3, stiff3_wp
   public :: rhs_sub, jacobian_sub, output_sub
+  public :: rhs_nonaut_sub, jacobian_nonaut_sub, rhs_time_derivative_sub
 
   !> Kind parameter for working precision of stiff3 reals
   integer, parameter :: stiff3_wp = kind(1.0d0)
 
   !> Working precision with short name for internal use
   integer, parameter :: wp = stiff3_wp
+
+  interface stiff3
+    module procedure stiff3_autonomous
+    module procedure stiff3_nonautonomous
+  end interface
 
   abstract interface
     !> Function to evaluate the right-hand side of a system of ODEs.
@@ -58,6 +64,33 @@ module stiff3_solver
         !! Step-length acceleration factor
     end subroutine
 
+    !> User supplied subprogram for non-autonomous rhs evaluation.
+    subroutine rhs_nonaut_sub(n,x,y,f)
+      import wp
+      integer, intent(in) :: n
+      real(wp), intent(in) :: x
+      real(wp), intent(in) :: y(n)
+      real(wp), intent(inout) :: f(n)
+    end subroutine
+
+    !> User supplied subprogram for non-autonomous Jacobian evaluation.
+    subroutine jacobian_nonaut_sub(n,x,y,df)
+      import wp
+      integer, intent(in) :: n
+      real(wp), intent(in) :: x
+      real(wp), intent(in) :: y(n)
+      real(wp), intent(inout) :: df(n,n)
+    end subroutine
+
+    !> User supplied subprogram for evaluation of dF/dx.
+    subroutine rhs_time_derivative_sub(n,x,y,fx)
+      import wp
+      integer, intent(in) :: n
+      real(wp), intent(in) :: x
+      real(wp), intent(in) :: y(n)
+      real(wp), intent(inout) :: fx(n)
+    end subroutine
+
   end interface
 
 
@@ -68,7 +101,7 @@ contains
 
   !> Semi-implicit Runge-Kutta integrator routine
   !
-  subroutine stiff3(n,fun,dfun,out,nprint,x0,x1,h0,eps,w,y)
+  subroutine stiff3_autonomous(n,fun,dfun,out,nprint,x0,x1,h0,eps,w,y)
     integer, intent(in) :: n
       !! Number of equations to be integrated.
     procedure(rhs_sub) :: fun
@@ -225,6 +258,79 @@ contains
       end if
 
     end do outer
+
+  end subroutine
+
+  !> Semi-implicit Runge-Kutta integrator routine for non-autonomous systems
+  !
+  subroutine stiff3_nonautonomous(n,fun,dfun,dfdx,out,nprint,x0,x1,h0,eps,w,y)
+    integer, intent(in) :: n
+      !! Number of equations to be integrated.
+    procedure(rhs_nonaut_sub) :: fun
+      !! User supplied subprogram for function evaluation.
+    procedure(jacobian_nonaut_sub) :: dfun
+      !! User supplied subprogram for evaluation of the Jacobian wrt y.
+    procedure(rhs_time_derivative_sub) :: dfdx
+      !! User supplied subprogram for evaluation of dF/dx.
+    procedure(output_sub) :: out
+      !! User supplied subprogram for output.
+    integer, intent(in) :: nprint
+      !! Printing interval. For `nprint = k` the solution is only printed.
+      !! at every kth step.
+    real(wp), intent(in) :: x0, x1
+      !! Limits of the independent variable between which the differential
+      !! equation is solved.
+    real(wp), intent(inout) :: h0
+      !! Suggested initial half-step length. On exit `h0` contains suggested
+      !! value of half-step length for continued integration beyond `x1`.
+    real(wp), intent(in) :: eps, w(n)
+      !! Tolerance parameters.
+    real(wp), intent(inout) :: y(n)
+      !! Vector of dependent variables at `x0`. On exit `y` is the vector of
+      !! dependent variables at `x1`.
+
+    real(wp) :: yaug(n+1), waug(n+1)
+
+    yaug(1) = x0
+    yaug(2:n+1) = y
+
+    waug(1) = 0.0_wp ! x' = 1 is exact, exclude augmented x from error control
+    waug(2:n+1) = w
+
+    call stiff3_autonomous(n+1,fun_aug,jac_aug,out_aug,nprint,x0,x1,h0,eps,waug,yaug)
+    y = yaug(2:n+1)
+
+  contains
+
+    ! Augmented rhs: x' = 1 and y' = f(x,y)
+    subroutine fun_aug(naug,yi,fi)
+      integer, intent(in) :: naug
+      real(wp), intent(in) :: yi(naug)
+      real(wp), intent(inout) :: fi(naug)
+      fi(1) = 1.0_wp
+      call fun(n,yi(1),yi(2:),fi(2:))
+    end subroutine
+
+    ! Augmented Jacobian:
+    ! dfi(1,:)   = 0
+    ! dfi(2:,1)  = df/dx
+    ! dfi(2:,2:) = df/dy
+    subroutine jac_aug(naug,yi,dfi)
+      integer, intent(in) :: naug
+      real(wp), intent(in) :: yi(naug)
+      real(wp), intent(inout) :: dfi(naug,naug)
+      dfi = 0.0_wp
+      call dfdx(n,yi(1),yi(2:),dfi(2:,1))
+      call dfun(n,yi(1),yi(2:),dfi(2:,2:))
+    end subroutine
+
+    subroutine out_aug(x,yi,ih,qa)
+      real(wp), intent(in) :: x
+      real(wp), intent(in) :: yi(:)
+      integer, intent(in) :: ih
+      real(wp), intent(in) :: qa
+      call out(x,yi(2:),ih,qa)
+    end subroutine
 
   end subroutine
 
