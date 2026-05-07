@@ -1,0 +1,2 @@
+/usr/bin/ar qc libstiff3.a CMakeFiles/stiff3.dir/stiff3_linalg.f90.o CMakeFiles/stiff3.dir/stiff3_solver.f90.o
+/usr/bin/ranlib libstiff3.a
