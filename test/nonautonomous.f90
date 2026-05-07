@@ -24,28 +24,28 @@ program nonautonomous
 
 contains
 
-  subroutine fun(n,t,y,f)
+  subroutine fun(n,x,y,f)
     integer, intent(in) :: n
-    real(wp), intent(in) :: t
+    real(wp), intent(in) :: x
     real(wp), intent(in) :: y(n)
     real(wp), intent(inout) :: f(n)
-    f(1) = -y(1) + sin(t)
+    f(1) = -y(1) + sin(x)
   end subroutine
 
-  subroutine jac(n,t,y,df)
+  subroutine jac(n,x,y,df)
     integer, intent(in) :: n
-    real(wp), intent(in) :: t
+    real(wp), intent(in) :: x
     real(wp), intent(in) :: y(n)
     real(wp), intent(inout) :: df(n,n)
     df(1,1) = -1.0_wp
   end subroutine
 
-  subroutine dfdx(n,t,y,fx)
+  subroutine dfdx(n,x,y,fx)
     integer, intent(in) :: n
-    real(wp), intent(in) :: t
+    real(wp), intent(in) :: x
     real(wp), intent(in) :: y(n)
     real(wp), intent(inout) :: fx(n)
-    fx(1) = cos(t)
+    fx(1) = cos(x)
   end subroutine
 
   subroutine out(t,y,ih,qa)

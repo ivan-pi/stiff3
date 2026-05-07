@@ -302,6 +302,7 @@ contains
 
   contains
 
+    ! Augmented rhs: x' = 1 and y' = f(x,y)
     subroutine fun_aug(naug,yi,fi)
       integer, intent(in) :: naug
       real(wp), intent(in) :: yi(naug)
@@ -310,6 +311,9 @@ contains
       call fun(n,yi(1),yi(2:),fi(2:))
     end subroutine
 
+    ! Augmented Jacobian:
+    ! [0      0 ]
+    ! [df/dx df/dy]
     subroutine jac_aug(naug,yi,dfi)
       integer, intent(in) :: naug
       real(wp), intent(in) :: yi(naug)
@@ -319,12 +323,12 @@ contains
       call dfun(n,yi(1),yi(2:),dfi(2:,2:))
     end subroutine
 
-    subroutine out_aug(x,yi,iha,qa)
+    subroutine out_aug(x,yi,ih,qa)
       real(wp), intent(in) :: x
       real(wp), intent(in) :: yi(:)
-      integer, intent(in) :: iha
+      integer, intent(in) :: ih
       real(wp), intent(in) :: qa
-      call out(x,yi(2:),iha,qa)
+      call out(x,yi(2:),ih,qa)
     end subroutine
 
   end subroutine
