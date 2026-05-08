@@ -17,6 +17,12 @@ This repository provides a refactored version with a simplified procedural inter
 - Depends on BLAS and LAPACK for linear algebra operations
 - Supports two build systems: [CMake](https://cmake.org/) and [Fortran Package Manager (fpm)](https://github.com/fortran-lang/fpm)
 
+## Releases
+
+| Major.Minor | Date       |
+|-------------|------------|
+| 0.1         | 2023-02-13 |
+
 ## Installation
 
 To use this project you need to have
