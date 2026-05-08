@@ -190,22 +190,22 @@ contains
 
     integer :: icon, iha, i, j, nr, irtrn
     integer :: nfev, njev, nlu
-    real(wp) :: xcur, xold, h, e, es, q, qa, hmax_used
+    real(wp) :: x_current, xold, h, e, es, q, qa, hmax_used
 
   ! icon = 0 except for last step which ends exactly at x1
     icon = 0
 
     nr = 0
-    xcur = x
+    x_current = x
     if (present(hmax)) then
       if (hmax < 0.0_wp) error stop 'stiff3: hmax must be a non-negative real value'
       if (hmax == 0.0_wp) then
-        hmax_used = abs(xend - xcur)
+        hmax_used = abs(xend - x_current)
       else
-        hmax_used = min(hmax,abs(xend - xcur))
+        hmax_used = min(hmax,abs(xend - x_current))
       end if
     else
-      hmax_used = abs(xend - xcur)
+      hmax_used = abs(xend - x_current)
     end if
     h = min(h0,hmax_used)
     nfev = 0
@@ -216,15 +216,15 @@ contains
 
     ! last step - or first step longer than interval
 
-      if ((xcur + 2.0_wp*h >= xend) .and. ((xend - xcur)/2.0_wp <= hmax_used)) then
-        h = (xend - xcur)/2.0_wp
+      if ((x_current + 2.0_wp*h >= xend) .and. ((xend - x_current)/2.0_wp <= hmax_used)) then
+        h = (xend - x_current)/2.0_wp
         icon = 1
       end if
 
     ! other steps - limit to one quarter of remaining interval
 
-      if ((icon == 0) .and. (xcur + 4.0_wp*h > xend)) then
-        h = (xend - xcur)/4.0_wp
+      if ((icon == 0) .and. (x_current + 4.0_wp*h > xend)) then
+        h = (xend - x_current)/4.0_wp
       end if
 
       h = min(h,hmax_used)
@@ -311,8 +311,8 @@ contains
       do i = 1, n
         y(i) = y(i) + (y(i) - ya(i))/7.0_wp
       end do
-      xold = xcur
-      xcur = xcur + 2*h
+      xold = x_current
+      x_current = x_current + 2*h
 
     !  compute new stepsize
 
@@ -324,7 +324,7 @@ contains
       nr = nr + 1
       if (present(solout)) then
         irtrn = 0
-        call solout(nr,xold,xcur,y,iha,qa,irtrn)
+        call solout(nr,xold,x_current,y,iha,qa,irtrn)
         if (irtrn < 0) then
           h0 = h
           if (present(stats)) stats = [nfev, njev, nlu]
