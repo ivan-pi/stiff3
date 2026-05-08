@@ -16,7 +16,7 @@ module stiff3_solver
   implicit none
   private
 
-  public :: stiff3, stiff3_wp
+  public :: stiff3, stiff3_auto, stiff3_work, stiff3_wp
   public :: rhs_sub, jacobian_sub, output_sub
 
   !> Kind parameter for working precision of stiff3 reals
@@ -66,6 +66,11 @@ module stiff3_solver
 
   end interface
 
+  interface stiff3
+    module procedure stiff3_auto
+    module procedure stiff3_work
+  end interface
+
 
 contains
 
@@ -74,7 +79,7 @@ contains
 
   !> Semi-implicit Runge-Kutta integrator routine
   !
-  subroutine stiff3(n,fun,dfun,x0,x1,h0,eps,w,y,solout,stats,hmax)
+  subroutine stiff3_auto(n,fun,dfun,x0,x1,h0,eps,w,y,solout,stats,hmax)
     integer, intent(in) :: n
       !! Number of equations to be integrated.
     procedure(rhs_sub) :: fun
@@ -107,6 +112,81 @@ contains
       !! Workspace for jacobian arrays
     integer :: ip(n)
       !! Workspace for the pivot array
+
+    call stiff3_core(n,fun,dfun,x0,x1,h0,eps,w,y, &
+                     yk1,yk2,ya,yold,yold1,f,fold,df,dfold,ip, &
+                     solout,stats,hmax)
+
+  end subroutine
+
+
+  !> Semi-implicit Runge-Kutta integrator routine with explicit workspace
+  !
+  subroutine stiff3_work(n,fun,dfun,x0,x1,h0,eps,w,y,rwork,iwork,solout,stats,hmax)
+    integer, intent(in) :: n
+      !! Number of equations to be integrated.
+    procedure(rhs_sub) :: fun
+      !! User supplied subprogram for function evaluation.
+    procedure(jacobian_sub) :: dfun
+      !! User supplied subprogram for evaluation of the Jacobian.
+    real(wp), intent(in) :: x0, x1
+      !! Limits of the independent variable between which the differential
+      !! equation is solved.
+    real(wp), intent(inout) :: h0
+      !! Suggested initial half-step length. On exit `h0` contains suggested
+      !! value of half-step length for continued integration beyond `x1`,
+      !! or the suggested step size at an interrupted callback return.
+    real(wp), intent(in) :: eps, w(n)
+      !! Tolerance parameters.
+    real(wp), intent(inout) :: y(n)
+      !! Vector of dependent variables at `x0`. On exit `y` is the vector of
+      !! dependent variables at `x1`.
+    real(wp), intent(inout) :: rwork(n*(7 + 2*n))
+      !! Real workspace of size `n*(7 + 2*n)`.
+    integer, intent(inout) :: iwork(n)
+      !! Integer workspace of size `n`.
+    procedure(output_sub), optional :: solout
+      !! User supplied subprogram for output.
+    integer, intent(out), optional :: stats(3)
+      !! Statistics array with `[nfev, njev, nlu]`.
+    real(wp), intent(in), optional :: hmax
+      !! Maximum absolute half-step size. If absent or zero, defaults to
+      !! `abs(x1 - x0)`.
+
+    call stiff3_core(n,fun,dfun,x0,x1,h0,eps,w,y, &
+                     yk1   = rwork(1), &
+                     yk2   = rwork(n+1), &
+                     ya    = rwork(2*n+1), &
+                     yold  = rwork(3*n+1), &
+                     yold1 = rwork(4*n+1), &
+                     f     = rwork(5*n+1), &
+                     fold  = rwork(6*n+1), &
+                     df    = rwork(7*n+1), &
+                     dfold = rwork(7*n+n*n+1), &
+                     ip    = iwork(1), &
+                     solout=solout,stats=stats,hmax=hmax)
+
+  end subroutine
+
+
+  !> Semi-implicit Runge-Kutta integrator routine core implementation
+  !
+  subroutine stiff3_core(n,fun,dfun,x0,x1,h0,eps,w,y, &
+                         yk1,yk2,ya,yold,yold1,f,fold,df,dfold,ip, &
+                         solout,stats,hmax)
+    integer, intent(in) :: n
+    procedure(rhs_sub) :: fun
+    procedure(jacobian_sub) :: dfun
+    real(wp), intent(in) :: x0, x1
+    real(wp), intent(inout) :: h0
+    real(wp), intent(in) :: eps, w(n)
+    real(wp), intent(inout) :: y(n)
+    real(wp), intent(inout) :: yk1(n), yk2(n), ya(n), yold(n), yold1(n), f(n), fold(n)
+    real(wp), intent(inout) :: df(n,n), dfold(n,n)
+    integer, intent(inout) :: ip(n)
+    procedure(output_sub), optional :: solout
+    integer, intent(out), optional :: stats(3)
+    real(wp), intent(in), optional :: hmax
 
     integer :: icon, iha, i, j, nr, irtrn
     integer :: nfev, njev, nlu
