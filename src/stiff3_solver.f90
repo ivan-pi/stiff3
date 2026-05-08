@@ -74,7 +74,7 @@ contains
 
   !> Semi-implicit Runge-Kutta integrator routine
   !
-  subroutine stiff3(n,fun,dfun,x0,x1,h0,eps,w,y,solout,iout)
+  subroutine stiff3(n,fun,dfun,x0,x1,h0,eps,w,y,solout)
     integer, intent(in) :: n
       !! Number of equations to be integrated.
     procedure(rhs_sub) :: fun
@@ -95,8 +95,6 @@ contains
       !! dependent variables at `x1`.
     procedure(output_sub), optional :: solout
       !! User supplied subprogram for output.
-    integer, intent(in), optional :: iout
-      !! Output interval. For `iout = k` output is produced every `k` steps.
 
     real(wp), dimension(n) :: yk1, yk2, ya, yold, yold1, f, fold
       !! Workspace for solution vector and right-hand side
@@ -105,7 +103,7 @@ contains
     integer :: ip(n)
       !! Workspace for the pivot array
 
-    integer :: icon, iha, i, j, nr, iout_used, irtrn
+    integer :: icon, iha, i, j, nr, irtrn
     real(wp) :: x, xold, h, e, es, q, qa
 
   ! icon = 0 except for last step which ends exactly at x1
@@ -114,15 +112,6 @@ contains
     nr = 0
     x = x0
     h = h0
-
-    if (.not. present(solout)) then
-      iout_used = 0
-    else if (.not. present(iout)) then
-      iout_used = 1
-    else
-      if (iout < 0) error stop 'stiff3: iout must be >= 0'
-      iout_used = iout
-    end if
 
     outer: do
 
@@ -229,14 +218,12 @@ contains
     ! perform output if appropriate
 
       nr = nr + 1
-      if (present(solout) .and. iout_used > 0) then
-        if (mod(nr,iout_used) == 0 .or. icon == 1) then
-          irtrn = 0
-          call solout(nr,xold,x,y,iha,qa,irtrn)
-          if (irtrn < 0) then
-            h0 = h
-            return
-          end if
+      if (present(solout)) then
+        irtrn = 0
+        call solout(nr,xold,x,y,iha,qa,irtrn)
+        if (irtrn < 0) then
+          h0 = h
+          return
         end if
       end if
 

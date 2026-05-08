@@ -4,7 +4,7 @@ program lorenz
 
   implicit none
 
-  integer, parameter :: n = 3, nout = 10
+  integer, parameter :: n = 3
   real(wp), parameter :: sigma = 10.0_wp, rho = 28.0_wp, beta = 8.0_wp/3.0_wp
   real(wp) :: y(n), w(n), x0, x1, h0, eps
   integer :: irtrn
@@ -23,7 +23,7 @@ program lorenz
   irtrn = 0
   call out(0,x0,x0,y,0,0.0_wp,irtrn)
 ! integrate system of ODEs
-  call stiff3(n,fun,jac,x0,x1,h0,eps,w,y,solout=out,iout=nout)
+  call stiff3(n,fun,jac,x0,x1,h0,eps,w,y,solout=out)
 
 contains
 

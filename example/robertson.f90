@@ -49,7 +49,6 @@ program main
   real(wp) :: y(n), w(n)
   real(wp) :: h0, eps, x0, x1
 
-  integer, parameter :: nout = 1
   integer :: irtrn
 
 ! initial value
@@ -69,7 +68,7 @@ program main
 
   irtrn = 0
   call output(0,x0,x0,y,0,0.0_wp,irtrn)
-  call stiff3(n,fun,dfun,x0,x1,h0,eps,w,y,solout=output,iout=nout)
+  call stiff3(n,fun,dfun,x0,x1,h0,eps,w,y,solout=output)
 
 contains
 
