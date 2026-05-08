@@ -68,13 +68,16 @@ contains
     real(wp), intent(in) :: qa
     integer, intent(inout) :: irtrn
 
+    ! This callback checks dense output on every accepted step over [xold, x].
+    ! It carries parent-scope state through xprev and yprev, which hold the
+    ! previous accepted endpoint so the next callback can verify continuity at
+    ! the interpolant start. The explicit workspace rwork is also inherited
+    ! from the parent scope on purpose so stiff3_interp can read the accepted
+    ! step data stored by stiff3_work.
     real(wp) :: xmid, yscalar
     real(wp) :: ymid(n), ystart(n), yend(n)
     real(wp) :: exact_mid(n), expected_start(n)
 
-    ! Exercise interpolation inside every callback using the accepted-step
-    ! interval [xold, x]. The saved xprev/yprev pair tracks the previous
-    ! accepted endpoint so the start of each new interpolant can be checked.
     xmid = 0.5_wp*(xold + x)
     exact_mid = exact_state(xmid)
 

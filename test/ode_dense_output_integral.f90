@@ -21,7 +21,7 @@ program ode_dense_output_integral
 
   y = [1.0_wp, 1.0_wp]
   w = 1.0_wp
-  h0 = 0.5_wp
+  h0 = 0.05_wp
   eps = 1.0e-8_wp
   nsteps_checked = 0
   adaptive_integral = 0.0_wp
@@ -84,12 +84,14 @@ contains
     real(wp), intent(in) :: qa
     integer, intent(inout) :: irtrn
 
+    ! This callback compares two integral estimates of y(1) over [x0, x1].
+    ! It carries parent-scope state through xprev/yprev1 for the native
+    ! accepted-step trapezoid rule and through xfixed_prev/yfixed_prev/
+    ! xfixed_next for the fine fixed-grid trapezoid rule sampled with
+    ! stiff3_interp. The explicit workspace rwork is also inherited
+    ! deliberately so stiff3_interp can access the accepted-step data.
     real(wp) :: yinterp
 
-    ! Compare two integral estimates of the first component over [x0, x1]:
-    ! (1) trapezoidal integration over the native accepted-step endpoints and
-    ! (2) trapezoidal integration over a fine fixed grid sampled via
-    !     stiff3_interp inside each accepted-step callback.
     if (abs(xold - xprev) > tol_x) then
       print '(A,I0,A,ES12.4,A,ES12.4)', &
         'accepted-step x mismatch on step ', nr, '. got=', xold, ' expected=', xprev
