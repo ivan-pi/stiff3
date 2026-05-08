@@ -16,7 +16,7 @@ program ode_linear_decay
   h0 = 0.01_wp
   eps = 1.0e-10_wp
 
-  call stiff3(n,fun,jac,x0,x1,h0,eps,w,y,solout=out,iout=1)
+  call stiff3(n,fun,jac,x0,x1,h0,eps,w,y)
 
   exact = exp(-lambda*x1)
   err = abs(y(1) - exact)
@@ -39,13 +39,6 @@ contains
     real(wp), intent(in) :: y(n)
     real(wp), intent(inout) :: df(n,n)
     df(1,1) = -lambda
-  end subroutine
-
-  subroutine out(nr,xold,x,y,iha,qa,irtrn)
-    integer, intent(in) :: nr, iha
-    real(wp), intent(in) :: xold
-    real(wp), intent(in) :: x, y(:), qa
-    integer, intent(inout) :: irtrn
   end subroutine
 
 end program
