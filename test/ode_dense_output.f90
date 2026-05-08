@@ -1,6 +1,6 @@
 program ode_dense_output
 
-  use stiff3_solver, only: stiff3, stiff3_interp_component, stiff3_interp_vector, wp => stiff3_wp
+  use stiff3_solver, only: stiff3, stiff3_interp, wp => stiff3_wp
 
   implicit none
 
@@ -20,7 +20,7 @@ program ode_dense_output
   eps = 1.0e-8_wp
   checked_dense_output = .false.
 
-  allocate(rwork(n*(8 + 2*n)))
+  allocate(rwork(n*(7 + 2*n)))
   allocate(iwork(n))
 
   call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,rwork,iwork,solout=check_dense_output)
@@ -73,8 +73,8 @@ contains
     xmid = 0.5_wp*(xold + x)
     exact_mid = exact_state(xmid)
 
-    call stiff3_interp_vector(xold,x,y,rwork,xmid,ymid)
-    call stiff3_interp_component(xold,x,y,rwork,xmid,2,yscalar)
+    call stiff3_interp(xold,x,y,rwork,xmid,ymid)
+    call stiff3_interp(xold,x,y,rwork,xmid,2,yscalar)
 
     if (maxval(abs(ymid - exact_mid)) > tol_mid) then
       print '(A,2(1X,ES12.4),A,2(1X,ES12.4))', &
@@ -87,13 +87,13 @@ contains
       error stop 1
     end if
 
-    call stiff3_interp_vector(xold,x,y,rwork,xold,ystart)
+    call stiff3_interp(xold,x,y,rwork,xold,ystart)
     if (maxval(abs(ystart - [1.0_wp, 1.0_wp])) > tol_end) then
       print '(A,2(1X,ES12.4),A)', 'step-start interpolation mismatch: ', ystart, ' expected initial state'
       error stop 1
     end if
 
-    call stiff3_interp_vector(xold,x,y,rwork,x,yend)
+    call stiff3_interp(xold,x,y,rwork,x,yend)
     if (maxval(abs(yend - y)) > tol_end) then
       print '(A,2(1X,ES12.4),A,2(1X,ES12.4))', 'step-end interpolation mismatch. got=', yend, ' expected=', y
       error stop 1

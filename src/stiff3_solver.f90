@@ -16,8 +16,7 @@ module stiff3_solver
   implicit none
   private
 
-  public :: stiff3, stiff3_auto, stiff3_work, stiff3_wp
-  public :: stiff3_interp_component, stiff3_interp_vector
+  public :: stiff3, stiff3_auto, stiff3_work, stiff3_wp, stiff3_interp
   public :: rhs_sub, jacobian_sub, output_sub
 
   !> Kind parameter for working precision of stiff3 reals
@@ -72,6 +71,11 @@ module stiff3_solver
     module procedure stiff3_work
   end interface
 
+  interface stiff3_interp
+    module procedure stiff3_interp_component
+    module procedure stiff3_interp_vector
+  end interface
+
 
 contains
 
@@ -117,7 +121,7 @@ contains
     call stiff3_core(n,fun,x,y,xend,jac,h0,eps,w, &
                      yk1=yk1,yk2=yk2,ya=ya,yold=yold,yold1=yold1, &
                      f=f,fold=fold,df=df,dfold=dfold,ip=ip, &
-                     solout=solout,stats=stats,hmax=hmax)
+                     solout=solout,stats=stats,hmax=hmax,save_interp=.false.)
 
   end subroutine
 
@@ -143,8 +147,8 @@ contains
     real(wp), intent(inout) :: y(n)
       !! Vector of dependent variables at `x`. On exit `y` is the vector of
       !! dependent variables at `xend`.
-    real(wp), intent(inout) :: rwork(n*(8 + 2*n))
-      !! Real workspace of size `n*(8 + 2*n)`.
+    real(wp), intent(inout) :: rwork(n*(7 + 2*n))
+      !! Real workspace of size `n*(7 + 2*n)`.
     integer, intent(inout) :: iwork(n)
       !! Integer workspace of size `n`.
     procedure(output_sub), optional :: solout
@@ -163,11 +167,10 @@ contains
                      yold1 = rwork(4*n+1), &
                      f     = rwork(5*n+1), &
                      fold  = rwork(6*n+1), &
-                     fend  = rwork(7*n+1), &
-                     df    = rwork(8*n+1), &
-                     dfold = rwork(8*n+n*n+1), &
+                     df    = rwork(7*n+1), &
+                     dfold = rwork(7*n+n*n+1), &
                      ip    = iwork(1), &
-                     solout=solout,stats=stats,hmax=hmax)
+                     solout=solout,stats=stats,hmax=hmax,save_interp=.true.)
 
   end subroutine
 
@@ -176,8 +179,7 @@ contains
   !
   subroutine stiff3_core(n,fun,x,y,xend,jac,h0,eps,w, &
                          yk1,yk2,ya,yold,yold1,f,fold,df,dfold,ip, &
-                         fend, &
-                         solout,stats,hmax)
+                         solout,stats,hmax,save_interp)
     integer, intent(in) :: n
     procedure(rhs_sub) :: fun
     procedure(jacobian_sub) :: jac
@@ -188,10 +190,10 @@ contains
     real(wp), intent(inout) :: yk1(n), yk2(n), ya(n), yold(n), yold1(n), f(n), fold(n)
     real(wp), intent(inout) :: df(n,n), dfold(n,n)
     integer, intent(inout) :: ip(n)
-    real(wp), intent(inout), optional :: fend(n)
     procedure(output_sub), optional :: solout
     integer, intent(out), optional :: stats(3)
     real(wp), intent(in), optional :: hmax
+    logical, intent(in), optional :: save_interp
 
     integer :: icon, iha, i, j, nr, irtrn
     integer :: nfev, njev, nlu
@@ -328,9 +330,11 @@ contains
 
       nr = nr + 1
       if (present(solout)) then
-        if (present(fend)) then
-          call fun(n,y,fend)
-          nfev = nfev + 1
+        if (present(save_interp)) then
+          if (save_interp) then
+            call fun(n,y,ya)
+            nfev = nfev + 1
+          end if
         end if
         irtrn = 0
         call solout(nr,xold,x_current,y,iha,qa,irtrn)
@@ -359,33 +363,35 @@ contains
   !! This routine is intended for use from within a `solout` callback after
   !! calling `stiff3_work`, which provides the required accepted-step data in
   !! `rwork`.
-  subroutine stiff3_interp_component(xold,x,y,rwork,xeval,icomp,yout)
+  subroutine stiff3_interp_component(xold,x,y,rwork,xeval,idx,yeval)
     real(wp), intent(in) :: xold, x
     real(wp), intent(in) :: y(:), rwork(:)
     real(wp), intent(in) :: xeval
-    integer, intent(in) :: icomp
-    real(wp), intent(out) :: yout
+    integer, intent(in) :: idx
+    real(wp), intent(out) :: yeval
 
     integer :: n
     real(wp) :: h, s
-    real(wp) :: a0, a1, b0, b1
+    real(wp) :: a1, a2, b1, b2
 
     n = size(y)
 
-    if (icomp < 1 .or. icomp > n) error stop 'stiff3_interp_component: icomp out of range'
-    call check_interp_arguments(xold,x,y,rwork,xeval)
+    if (idx < 1 .or. idx > n) error stop 'stiff3_interp: idx out of range'
 
     h = x - xold
     if (h == 0.0_wp) then
-      yout = y(icomp)
+      yeval = y(idx)
       return
     end if
 
-    s = max(0.0_wp,min(1.0_wp,(xeval - xold)/h))
-    call hermite_basis(h,s,a0,a1,b0,b1)
+    s = (xeval - xold)/h
+    a1 = (1.0_wp + 2.0_wp*s)*(s - 1.0_wp)**2
+    a2 = (3.0_wp - 2.0_wp*s)*s**2
+    b1 = h*s*(s - 1.0_wp)**2
+    b2 = h*(s - 1.0_wp)*s**2
 
-    yout = a0*rwork(3*n + icomp) + a1*y(icomp) + &
-           b0*rwork(6*n + icomp) + b1*rwork(7*n + icomp)
+    yeval = a1*rwork(3*n + idx) + a2*y(idx) + &
+            b1*rwork(6*n + idx) + b2*rwork(2*n + idx)
   end subroutine
 
 
@@ -394,64 +400,32 @@ contains
   !! This routine is intended for use from within a `solout` callback after
   !! calling `stiff3_work`, which provides the required accepted-step data in
   !! `rwork`.
-  subroutine stiff3_interp_vector(xold,x,y,rwork,xeval,yout)
+  subroutine stiff3_interp_vector(xold,x,y,rwork,xeval,yeval)
     real(wp), intent(in) :: xold, x
     real(wp), intent(in) :: y(:), rwork(:)
     real(wp), intent(in) :: xeval
-    real(wp), intent(out) :: yout(:)
+    real(wp), intent(out) :: yeval(:)
 
     integer :: n
     real(wp) :: h, s
-    real(wp) :: a0, a1, b0, b1
+    real(wp) :: a1, a2, b1, b2
 
     n = size(y)
-
-    if (size(yout) /= n) error stop 'stiff3_interp_vector: yout has wrong size'
-    call check_interp_arguments(xold,x,y,rwork,xeval)
 
     h = x - xold
     if (h == 0.0_wp) then
-      yout = y
+      yeval = y
       return
     end if
 
-    s = max(0.0_wp,min(1.0_wp,(xeval - xold)/h))
-    call hermite_basis(h,s,a0,a1,b0,b1)
+    s = (xeval - xold)/h
+    a1 = (1.0_wp + 2.0_wp*s)*(s - 1.0_wp)**2
+    a2 = (3.0_wp - 2.0_wp*s)*s**2
+    b1 = h*s*(s - 1.0_wp)**2
+    b2 = h*(s - 1.0_wp)*s**2
 
-    yout = a0*rwork(3*n+1:4*n) + a1*y + &
-           b0*rwork(6*n+1:7*n) + b1*rwork(7*n+1:8*n)
-  end subroutine
-
-
-  subroutine check_interp_arguments(xold,x,y,rwork,xeval)
-    real(wp), intent(in) :: xold, x
-    real(wp), intent(in) :: y(:), rwork(:)
-    real(wp), intent(in) :: xeval
-
-    integer :: n
-    real(wp) :: tol
-
-    n = size(y)
-
-    if (size(rwork) < n*(8 + 2*n)) then
-      error stop 'stiff3_interp: rwork is too small for dense output'
-    end if
-
-    tol = 16.0_wp*epsilon(1.0_wp)*max(1.0_wp,abs(xold),abs(x))
-    if (xeval < min(xold,x) - tol .or. xeval > max(xold,x) + tol) then
-      error stop 'stiff3_interp: xeval must lie in [xold, x]'
-    end if
-  end subroutine
-
-
-  subroutine hermite_basis(h,s,a0,a1,b0,b1)
-    real(wp), intent(in) :: h, s
-    real(wp), intent(out) :: a0, a1, b0, b1
-
-    a0 = (1.0_wp + 2.0_wp*s)*(1.0_wp - s)**2
-    a1 = (3.0_wp - 2.0_wp*s)*s**2
-    b0 = h*s*(1.0_wp - s)**2
-    b1 = h*(s - 1.0_wp)*s**2
+    yeval = a1*rwork(3*n+1:4*n) + a2*y + &
+            b1*rwork(6*n+1:7*n) + b2*rwork(2*n+1:3*n)
   end subroutine
 
 

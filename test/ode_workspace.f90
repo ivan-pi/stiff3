@@ -18,7 +18,7 @@ program ode_workspace
   h0 = 0.02_wp
   eps = 1.0e-8_wp
 
-  allocate(rwork(n*(8 + 2*n)))
+  allocate(rwork(n*(7 + 2*n)))
   allocate(iwork(n))
 
   call stiff3(n,fun,x0,y_auto,x1,jac,h0,eps,w,stats=stats_auto)

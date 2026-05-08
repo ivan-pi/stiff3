@@ -13,7 +13,7 @@ This repository provides a refactored version with a simplified procedural inter
 - Optional maximum absolute half-step size (`hmax`) to cap step growth
 - Optional runtime statistics output: rhs evaluations (`nfev`), Jacobian evaluations (`njev`), and LU decompositions (`nlu`)
 - Optional explicit workspace interface via `stiff3(..., rwork, iwork, ...)` for caller-managed memory
-- Dense output helpers `stiff3_interp_component` and `stiff3_interp_vector` for accepted steps in `solout`
+- Dense output helper `stiff3_interp` for accepted steps in `solout`
 - Requires an exact user-supplied Jacobian
 - Depends on BLAS and LAPACK for linear algebra operations
 - Supports two build systems: [CMake](https://cmake.org/) and [Fortran Package Manager (fpm)](https://github.com/fortran-lang/fpm)
@@ -153,12 +153,12 @@ The two tolerance parameters `eps` and `w` together control how accurately the s
 
 A reasonable first choice is `eps = 1.0e-4` with all `w(i) = 1.0`, which requests roughly four significant digits from every component.
 
-For interoperability scenarios where the caller manages memory allocation (e.g. language bindings), `stiff3` also provides an overload with explicit work arrays: `rwork` of size `n*(8 + 2*n)` and `iwork` of size `n`.
+For interoperability scenarios where the caller manages memory allocation (e.g. language bindings), `stiff3` also provides an overload with explicit work arrays: `rwork` of size `n*(7 + 2*n)` and `iwork` of size `n`.
 
-When using this explicit-workspace overload together with `solout`, accepted-step dense output is available through:
+When using this explicit-workspace overload together with `solout`, accepted-step dense output is available through the generic interface `stiff3_interp`:
 
-- `stiff3_interp_component(xold, x, y, rwork, xeval, icomp, yout)`
-- `stiff3_interp_vector(xold, x, y, rwork, xeval, yout)`
+- `stiff3_interp(xold, x, y, rwork, xeval, idx, yeval)`
+- `stiff3_interp(xold, x, y, rwork, xeval, yeval)`
 
 These routines evaluate a cubic Hermite interpolant over the current accepted step `[xold, x]`. They are only valid inside the active `solout` callback of `stiff3_work`, and `xeval` must lie within the current accepted step.
 
