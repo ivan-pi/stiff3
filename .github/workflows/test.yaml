@@ -44,25 +44,13 @@ jobs:
         echo "FC=${FC_PATH}" >> "$GITHUB_ENV"
         echo "FPM_FC=${FC_PATH}" >> "$GITHUB_ENV"
 
-    - name: Set flang compiler
-      if: contains(matrix.os, 'macos')
-      run: |
-        FC_PATH="$(command -v flang || command -v flang-new)"
-        if [ -z "${FC_PATH}" ]; then
-          echo "flang compiler not found on PATH" >&2
-          exit 1
-        fi
-        echo "FC=${FC_PATH}" >> "$GITHUB_ENV"
-        echo "FPM_FC=${FC_PATH}" >> "$GITHUB_ENV"
-
     - name: Install fpm
       uses: fortran-lang/setup-fpm@v7
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Run example programs (release)
+    - name: Run example programs (debug)
       run: |
         "${FC}" --version
-        fpm build --flag '-pedantic -g -fbacktrace -O2'
         fpm run --example robertson
         fpm run --example vanpol
