@@ -87,10 +87,10 @@ contains
     if (nr == 1) then
       expected_start = exact_state(xold)
     else
-      expected_start = yprev
+        expected_start = yprev
       if (abs(xold - xprev) > tol_end) then
         print '(A,I0,A,ES12.4,A,ES12.4)', &
-          'step-start abscissa mismatch on step ', nr, '. got=', xold, ' expected=', xprev
+          'step-start x-coordinate mismatch on step ', nr, '. got=', xold, ' expected=', xprev
         error stop 1
       end if
     end if

@@ -402,7 +402,8 @@ contains
 
     ! The rwork slices below must match the named associations in stiff3_work:
     ! yold -> rwork(3*n+1:4*n), fold -> rwork(6*n+1:7*n),
-    ! ya   -> rwork(2*n+1:3*n) once the accepted-step end derivative is stored.
+    ! ya   -> rwork(2*n+1:3*n) after stiff3_core stores the accepted-step end
+    !         derivative there before calling solout when save_interp is true.
     yeval = a1*rwork(3*n + idx) + a2*y(idx) + &
             b1*rwork(6*n + idx) + b2*rwork(2*n + idx)
   end subroutine
@@ -439,7 +440,8 @@ contains
 
     ! The rwork slices below must match the named associations in stiff3_work:
     ! yold -> rwork(3*n+1:4*n), fold -> rwork(6*n+1:7*n),
-    ! ya   -> rwork(2*n+1:3*n) once the accepted-step end derivative is stored.
+    ! ya   -> rwork(2*n+1:3*n) after stiff3_core stores the accepted-step end
+    !         derivative there before calling solout when save_interp is true.
     yeval = a1*rwork(3*n+1:4*n) + a2*y + &
             b1*rwork(6*n+1:7*n) + b2*rwork(2*n+1:3*n)
   end subroutine
