@@ -119,7 +119,7 @@ contains
     nr = 0
     x = x0
     if (present(hmax)) then
-      if (hmax < 0.0_wp) error stop 'hmax must be a non-negative value'
+      if (hmax < 0.0_wp) error stop 'hmax must be a non-negative real value'
       if (hmax == 0.0_wp) then
         hmax_used = abs(x1 - x0)
       else
@@ -137,6 +137,7 @@ contains
 
     ! last step - or first step longer than interval
 
+      ! Final step is only taken when it both reaches x1 and respects hmax.
       is_last_step = (x + 2.0_wp*h >= x1) .and. ((x1 - x)/2.0_wp <= hmax_used)
       if (is_last_step) then
         h = (x1 - x)/2.0_wp
