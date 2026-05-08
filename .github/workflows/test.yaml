@@ -59,7 +59,7 @@ jobs:
 
     - name: Set flang compiler
       run: |
-        FC_PATH="${FC:-$(command -v flang || command -v flang-new || true)}"
+        FC_PATH="${FC:-$(command -v flang || command -v flang-new)}"
         if [ -z "${FC_PATH}" ]; then
           echo "flang compiler not found on PATH" >&2
           exit 1
