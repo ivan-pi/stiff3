@@ -16,7 +16,7 @@ module stiff3_solver
   implicit none
   private
 
-  public :: stiff3, stiff3_wp
+  public :: stiff3, stiff3_wp, contd3
   public :: rhs_sub, jacobian_sub, output_sub
 
   !> Kind parameter for working precision of stiff3 reals
@@ -65,6 +65,26 @@ module stiff3_solver
     end subroutine
 
   end interface
+
+  !> @defgroup dense Dense output interpolation state
+  !>
+  !> These module variables hold the data needed to evaluate the
+  !> C1 cubic Hermite interpolant via contd3() inside a solout callback.
+  !> They are overwritten after each accepted step.
+  integer :: contd3_nn = 0
+    !! Number of equations (0 until the first step is taken)
+  real(wp) :: contd3_xold = 0.0_wp
+    !! Left endpoint of the last accepted step
+  real(wp) :: contd3_h = 0.0_wp
+    !! Width of the last accepted step (= x - xold)
+  real(wp), allocatable :: contd3_yold(:)
+    !! Solution at xold
+  real(wp), allocatable :: contd3_fold(:)
+    !! Derivative (RHS) at xold
+  real(wp), allocatable :: contd3_y(:)
+    !! Solution at x = xold + h
+  real(wp), allocatable :: contd3_f(:)
+    !! Derivative (RHS) at x = xold + h
 
 
 contains
@@ -229,6 +249,31 @@ contains
 
       nr = nr + 1
       if (present(solout)) then
+
+        ! Prepare dense output data for contd3().
+        ! Evaluate the RHS at the new point so we have derivatives at both
+        ! endpoints of the step, which are needed for the Hermite interpolant.
+        ! yk1 is free to reuse as temporary storage here.
+        call fun(n,y,yk1)
+        nfev = nfev + 1
+
+        ! (Re)allocate module arrays if the problem size changed
+        if (contd3_nn /= n) then
+          if (allocated(contd3_yold)) deallocate(contd3_yold)
+          if (allocated(contd3_fold)) deallocate(contd3_fold)
+          if (allocated(contd3_y))    deallocate(contd3_y)
+          if (allocated(contd3_f))    deallocate(contd3_f)
+          allocate(contd3_yold(n), contd3_fold(n), contd3_y(n), contd3_f(n))
+          contd3_nn = n
+        end if
+
+        contd3_xold = xold
+        contd3_h    = x - xold
+        contd3_yold = yold
+        contd3_fold = fold
+        contd3_y    = y
+        contd3_f    = yk1
+
         irtrn = 0
         call solout(nr,xold,x,y,iha,qa,irtrn)
         if (irtrn < 0) then
@@ -249,6 +294,56 @@ contains
     end do outer
 
   end subroutine
+
+
+  !> Evaluate the dense (continuous) output interpolant at an arbitrary point.
+  !>
+  !> Uses a C1 cubic Hermite polynomial to interpolate the solution at
+  !> `x`, which must lie within the last accepted step `[xold, xold+h]`.
+  !> Must be called from within a `solout` callback while `stiff3` is running.
+  !>
+  !> The interpolant matches the solution and its derivative at both endpoints,
+  !> giving first-order continuous (C1) output.
+  !>
+  !> ### Example
+  !> ```fortran
+  !> subroutine out(nr, told, t, y, ih, qa, irtrn)
+  !>   integer, intent(in) :: nr
+  !>   real(wp), intent(in) :: told, t, y(:), qa
+  !>   integer, intent(in) :: ih
+  !>   integer, intent(inout) :: irtrn
+  !>   real(wp) :: yi(size(y))
+  !>   integer :: k
+  !>   do k = 1, 10                              ! 10 sub-points per step
+  !>     real(wp) :: targ = told + (t-told)*k/10.0_wp
+  !>     yi = [(contd3(i, targ), i = 1, size(y))]
+  !>     write(*,*) targ, yi
+  !>   end do
+  !> end subroutine
+  !> ```
+  function contd3(i, x) result(yarg)
+    integer, intent(in) :: i
+      !! Component index (1-based)
+    real(wp), intent(in) :: x
+      !! Point at which to evaluate the interpolant (must be in [xold, xold+h])
+    real(wp) :: yarg
+      !! Interpolated value of the i-th solution component
+
+    real(wp) :: s, a1, a2, b1, b2
+
+    if (.not. allocated(contd3_y)) &
+      error stop 'contd3: dense output unavailable; call stiff3 with a solout argument'
+
+    ! Normalised coordinate: s = 0 at xold, s = 1 at x = xold + h
+    s  = (x - contd3_xold) / contd3_h
+    a1 = (1.0_wp + 2.0_wp*s) * (s - 1.0_wp)**2
+    a2 = (3.0_wp - 2.0_wp*s) * s**2
+    b1 = contd3_h * s * (s - 1.0_wp)**2
+    b2 = contd3_h * (s - 1.0_wp) * s**2
+
+    yarg = a1*contd3_yold(i) + a2*contd3_y(i) + &
+           b1*contd3_fold(i) + b2*contd3_f(i)
+  end function
 
 
   !> Single-step semi-implicit integration
