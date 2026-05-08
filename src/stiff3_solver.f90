@@ -376,7 +376,7 @@ contains
 
     n = size(y)
 
-    if (idx < 1 .or. idx > n) error stop 'stiff3_interp: idx out of range'
+    if (idx < 1 .or. idx > n) error stop 'stiff3_interp_component: idx out of range'
 
     h = x - xold
     if (h == 0.0_wp) then
