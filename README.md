@@ -21,6 +21,7 @@ This repository provides a refactored version with a simplified procedural inter
 
 | Major.Minor | Date       |
 |-------------|------------|
+| 0.2         | TBD        |
 | 0.1         | 2023-02-13 |
 
 ## Installation
