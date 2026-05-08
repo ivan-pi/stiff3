@@ -312,10 +312,10 @@ contains
   !>   real(wp), intent(in) :: told, t, y(:), qa
   !>   integer, intent(in) :: ih
   !>   integer, intent(inout) :: irtrn
-  !>   real(wp) :: yi(size(y))
+  !>   real(wp) :: yi(size(y)), targ
   !>   integer :: k
   !>   do k = 1, 10                              ! 10 sub-points per step
-  !>     real(wp) :: targ = told + (t-told)*k/10.0_wp
+  !>     targ = told + (t-told)*k/10.0_wp
   !>     yi = [(contd3(i, targ), i = 1, size(y))]
   !>     write(*,*) targ, yi
   !>   end do

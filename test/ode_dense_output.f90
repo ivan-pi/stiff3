@@ -70,7 +70,7 @@ contains
       targ = told + (t - told) * real(k, wp) / real(nsub + 1, wp)
       y1_interp = contd3(1, targ)
       y2_interp = contd3(2, targ)
-      err = max(abs(y1_interp - cos(targ)), abs(y2_interp + sin(targ)))
+      err = max(abs(y1_interp - cos(targ)), abs(y2_interp - (-sin(targ))))
       max_err = max(max_err, err)
     end do
 
