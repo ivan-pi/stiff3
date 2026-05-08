@@ -57,9 +57,9 @@ module stiff3_solver
         !! Current value of the dependent variable vector
       integer, intent(in) :: iha
         !! Number of bisections (unsuccesful integrations) in
-        !! the current step
+        !! the current step (set to zero for the initial callback)
       real(wp), intent(in) :: qa
-        !! Step-length acceleration factor
+        !! Step-length acceleration factor (set to zero for the initial callback)
       integer, intent(inout) :: irtrn
         !! If set < 0 by the callback, integration is interrupted
     end subroutine
@@ -86,7 +86,8 @@ contains
       !! equation is solved.
     real(wp), intent(inout) :: h0
       !! Suggested initial half-step length. On exit `h0` contains suggested
-      !! value of half-step length for continued integration beyond `x1`.
+      !! value of half-step length for continued integration beyond `x1`,
+      !! or the suggested step size at an interrupted callback return.
     real(wp), intent(in) :: eps, w(n)
       !! Tolerance parameters.
     real(wp), intent(inout) :: y(n)
@@ -127,7 +128,6 @@ contains
       irtrn = 0
       call solout(nr,x0,x0,y,0,0.0_wp,irtrn)
       if (irtrn < 0) then
-        h0 = h
         return
       end if
     end if
