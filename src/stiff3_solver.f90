@@ -110,6 +110,7 @@ contains
 
     integer :: icon, iha, i, j, nr, irtrn
     integer :: nfev, njev, nlu
+    logical :: is_last_step
     real(wp) :: x, xold, h, e, es, q, qa, hmax_used
 
   ! icon = 0 except for last step which ends exactly at x1
@@ -118,7 +119,7 @@ contains
     nr = 0
     x = x0
     if (present(hmax)) then
-      if (hmax < 0.0_wp) error stop "hmax must be a non-negative value"
+      if (hmax < 0.0_wp) error stop 'hmax must be a non-negative value'
       if (hmax == 0.0_wp) then
         hmax_used = abs(x1 - x0)
       else
@@ -136,7 +137,8 @@ contains
 
     ! last step - or first step longer than interval
 
-      if ((x + 2.0_wp*h >= x1) .and. ((x1 - x)/2.0_wp <= hmax_used)) then
+      is_last_step = (x + 2.0_wp*h >= x1) .and. ((x1 - x)/2.0_wp <= hmax_used)
+      if (is_last_step) then
         h = (x1 - x)/2.0_wp
         icon = 1
       end if

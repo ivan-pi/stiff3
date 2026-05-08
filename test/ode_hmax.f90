@@ -6,20 +6,20 @@ program ode_hmax
 
   integer, parameter :: n = 1
   real(wp), parameter :: tol = 1.0e-10_wp
-  real(wp) :: y_default(n), y_zero(n), y_capped(n), w(n), x0, x1, h0, eps_relaxed
+  real(wp) :: y_default(n), y_zero(n), y_capped(n), w(n), x0, x1, h0, eps_huge
   integer :: stats_default(3), stats_zero(3), stats_capped(3)
 
   w = 1.0_wp
   x0 = 0.0_wp
   x1 = 1.0_wp
   h0 = 0.5_wp
-  eps_relaxed = 1.0e6_wp
+  eps_huge = 1.0e6_wp
 
   y_default = [1.0_wp]
-  call stiff3(n,fun,jac,x0,x1,h0,eps_relaxed,w,y_default,stats=stats_default)
+  call stiff3(n,fun,jac,x0,x1,h0,eps_huge,w,y_default,stats=stats_default)
 
   y_zero = [1.0_wp]
-  call stiff3(n,fun,jac,x0,x1,h0,eps_relaxed,w,y_zero,stats=stats_zero,hmax=0.0_wp)
+  call stiff3(n,fun,jac,x0,x1,h0,eps_huge,w,y_zero,stats=stats_zero,hmax=0.0_wp)
 
   if (any(stats_zero /= stats_default)) then
     print '(A,3(I0,1X),A,3(I0,1X))', &
@@ -34,7 +34,7 @@ program ode_hmax
   end if
 
   y_capped = [1.0_wp]
-  call stiff3(n,fun,jac,x0,x1,h0,eps_relaxed,w,y_capped,stats=stats_capped,hmax=0.1_wp)
+  call stiff3(n,fun,jac,x0,x1,h0,eps_huge,w,y_capped,stats=stats_capped,hmax=0.1_wp)
 
   if (stats_capped(3) <= stats_default(3)) then
     print '(A,3(I0,1X),A,3(I0,1X))', &
