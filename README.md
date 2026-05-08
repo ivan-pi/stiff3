@@ -135,19 +135,20 @@ The specific three-stage semi-implicit Runge-Kutta method (SIRK3) used by `stiff
 
 The adaptive stepsize selection strategy is described in Villadsen & Michelsen (1978), Section 8.2.3, pages 314–317.
 
-The error tolerance parameters `eps` and `w` control the local error accepted per integration step. After each step, the solver computes a scaled error norm:
+The two tolerance parameters `eps` and `w` together control how accurately the solution is tracked:
+
+- **`eps`** — a single scalar that sets the overall accuracy goal. A smaller value requests a more accurate solution at the cost of more integration steps. Typical values range from `1e-3` (low accuracy) to `1e-8` (high accuracy).
+- **`w(i)`** — a positive weight for each solution component `i`. Setting all weights to `1.0` applies the same accuracy goal uniformly across all components. Increasing `w(i)` relative to the others tightens the tolerance on component `i`.
+
+A reasonable first choice is `eps = 1.0e-4` with all `w(i) = 1.0`, which requests roughly four significant digits from every component.
+
+**How the tolerance is applied:** after each step the solver estimates the local error in each component and checks:
 
 ```
-e = max_i { w(i) * |error_i| / (1 + |y_i|) }
+|error_i| / (1 + |y_i|) <= eps / w(i)   for every i
 ```
 
-The step is accepted when `e <= eps`. For component `i` this is equivalent to requiring:
-
-```
-|error_i| <= (eps/w(i)) * (1 + |y_i|)
-```
-
-In the standard `atol`/`rtol` terminology, this corresponds to setting `atol_i = rtol_i = eps/w(i)` for each component. Increasing `w(i)` tightens the tolerance on component `i`; setting all `w = 1` applies the same tolerance `eps * (1 + |y_i|)` uniformly to all components.
+The denominator `1 + |y_i|` makes the check relative when the solution is large and absolute when it is near zero, similar to the mixed-tolerance convention used in many modern ODE solvers. In standard `atol`/`rtol` notation this is equivalent to `atol_i = rtol_i = eps / w(i)` for each component.
 
 ## Contributing
 
