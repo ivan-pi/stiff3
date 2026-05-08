@@ -28,7 +28,8 @@ program ode_workspace
   call stiff3(n,fun,jac,x0,x1,h0,eps,w,y_work,rwork,iwork,stats=stats_work)
 
   if (maxval(abs(y_auto - y_work)) > tol) then
-    print '(A,2(1X,ES12.4))', 'solutions differ:', y_auto - y_work
+    print '(A,2(1X,ES12.4),A,2(1X,ES12.4),A,2(1X,ES12.4))', &
+      'solutions differ. auto=', y_auto, ' work=', y_work, ' diff=', y_auto - y_work
     error stop 1
   end if
 
