@@ -10,6 +10,7 @@ This repository provides a refactored version with a simplified procedural inter
 
 - Third-order Rosenbrock-type (semi-implicit Runge-Kutta) integrator suitable for stiff ODE systems
 - Adaptive stepsize control with error tolerance per component
+- Optional runtime statistics output: rhs evaluations (`nfev`), Jacobian evaluations (`njev`), and LU decompositions (`nlu`)
 - Requires an exact user-supplied Jacobian
 - Depends on BLAS and LAPACK for linear algebra operations
 - Supports two build systems: [CMake](https://cmake.org/) and [Fortran Package Manager (fpm)](https://github.com/fortran-lang/fpm)
@@ -77,7 +78,7 @@ program vanpol
   integer, parameter :: n = 2
   real(wp), parameter :: mu = 10.0_wp
   real(wp) :: y(n), w(n), x0, x1, h0, eps
-  integer :: irtrn
+  integer :: irtrn, stats(3)
 
 ! initial value
   y = [1.0_wp, 1.0_wp]
@@ -93,7 +94,8 @@ program vanpol
   irtrn = 0
   call out(0,x0,x0,y,0,0.0_wp,irtrn)
 ! integrate system of ODEs
-  call stiff3(n,fun,jac,x0,x1,h0,eps,w,y,solout=out)
+  call stiff3(n,fun,jac,x0,x1,h0,eps,w,y,solout=out,stats=stats)
+  print '(A,3(I0,1X))', 'nfev njev nlu: ', stats
 
 contains
 

@@ -74,7 +74,7 @@ contains
 
   !> Semi-implicit Runge-Kutta integrator routine
   !
-  subroutine stiff3(n,fun,dfun,x0,x1,h0,eps,w,y,solout)
+  subroutine stiff3(n,fun,dfun,x0,x1,h0,eps,w,y,solout,stats)
     integer, intent(in) :: n
       !! Number of equations to be integrated.
     procedure(rhs_sub) :: fun
@@ -95,6 +95,8 @@ contains
       !! dependent variables at `x1`.
     procedure(output_sub), optional :: solout
       !! User supplied subprogram for output.
+    integer, intent(out), optional :: stats(3)
+      !! Statistics array with `[nfev, njev, nlu]`.
 
     real(wp), dimension(n) :: yk1, yk2, ya, yold, yold1, f, fold
       !! Workspace for solution vector and right-hand side
@@ -104,6 +106,7 @@ contains
       !! Workspace for the pivot array
 
     integer :: icon, iha, i, j, nr, irtrn
+    integer :: nfev, njev, nlu
     real(wp) :: x, xold, h, e, es, q, qa
 
   ! icon = 0 except for last step which ends exactly at x1
@@ -112,6 +115,9 @@ contains
     nr = 0
     x = x0
     h = h0
+    nfev = 0
+    njev = 0
+    nlu = 0
 
     outer: do
 
@@ -131,7 +137,9 @@ contains
     ! evaluate function and jacobian
 
       call fun(n,y,f)
+      nfev = nfev + 1
       call dfun(n,y,df)
+      njev = njev + 1
 
     ! keep values which are used in half-step integration
 
@@ -145,7 +153,7 @@ contains
 
     ! perform full integration step
 
-      call sirk3(n,fun,ip,f,y,yk1,yk2,df,2*h)
+      call sirk3(n,fun,ip,f,y,yk1,yk2,df,2*h,nfev,nlu)
 
       do i = 1, n
         ya(i) = y(i)
@@ -163,13 +171,15 @@ contains
       inner: do
         iha = iha + 1
 
-        call sirk3(n,fun,ip,f,y,yk1,yk2,df,h)
+        call sirk3(n,fun,ip,f,y,yk1,yk2,df,h,nfev,nlu)
         call fun(n,y,f)
+        nfev = nfev + 1
         call dfun(n,y,df)
+        njev = njev + 1
 
         yold1 = y
 
-        call sirk3(n,fun,ip,f,y,yk1,yk2,df,h)
+        call sirk3(n,fun,ip,f,y,yk1,yk2,df,h,nfev,nlu)
 
       ! half step integration finished
       ! compute deviation and compare with tolerance
@@ -223,6 +233,7 @@ contains
         call solout(nr,xold,x,y,iha,qa,irtrn)
         if (irtrn < 0) then
           h0 = h
+          if (present(stats)) stats = [nfev, njev, nlu]
           return
         end if
       end if
@@ -231,6 +242,7 @@ contains
 
       if (icon == 1) then
         h0 = h
+        if (present(stats)) stats = [nfev, njev, nlu]
         return
       end if
 
@@ -241,7 +253,7 @@ contains
 
   !> Single-step semi-implicit integration
   !
-  subroutine sirk3(n,fun,ipiv,f,y,yk1,yk2,df,h)
+  subroutine sirk3(n,fun,ipiv,f,y,yk1,yk2,df,h,nfev,nlu)
     integer, intent(in) :: n
       !! Size of the system of ODEs
     procedure(rhs_sub) :: fun
@@ -260,6 +272,10 @@ contains
       !! On output contains the factorized matrix (I - h a J) = LU
     real(wp), intent(in) :: h
       !! Step size of the independent variable
+    integer, intent(inout) :: nfev
+      !! Number of right-hand side evaluations
+    integer, intent(inout) :: nlu
+      !! Number of LU decompositions
 
     integer :: i
 
@@ -281,6 +297,7 @@ contains
     ! perform triangular decomposition and evaluate k1
     !
     call lu(df,ipiv)
+    nlu = nlu + 1
     call back(df,f,ipiv)
 
     do i = 1, n
@@ -288,6 +305,7 @@ contains
       yk2(i) = y(i) + 0.75_wp * yk1(i)
     end do
     call fun(n,yk2,f)
+    nfev = nfev + 1
     call back(df,f,ipiv)
 
     !
