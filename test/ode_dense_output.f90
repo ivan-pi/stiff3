@@ -7,10 +7,12 @@ program ode_dense_output
   integer, parameter :: n = 2
   real(wp), parameter :: tol_mid = 1.0e-6_wp
   real(wp), parameter :: tol_end = 1.0e-12_wp
+  real(wp), parameter :: hmax = 0.05_wp
   real(wp) :: y(n), w(n), x0, x1, h0, eps
   real(wp), allocatable :: rwork(:)
   integer, allocatable :: iwork(:)
-  logical :: checked_dense_output
+  integer :: nsteps_checked
+  real(wp) :: yprev(n), xprev
 
   y = [1.0_wp, 1.0_wp]
   w = 1.0_wp
@@ -18,15 +20,17 @@ program ode_dense_output
   x1 = 1.0_wp
   h0 = 0.5_wp
   eps = 1.0e-8_wp
-  checked_dense_output = .false.
+  nsteps_checked = 0
+  xprev = x0
+  yprev = y
 
   allocate(rwork(n*(7 + 2*n)))
   allocate(iwork(n))
 
-  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,rwork,iwork,solout=check_dense_output)
+  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,rwork,iwork,solout=check_dense_output,hmax=hmax)
 
-  if (.not. checked_dense_output) then
-    print '(A)', 'dense-output callback was not exercised'
+  if (nsteps_checked < 2) then
+    print '(A,I0)', 'expected dense-output test to exercise multiple steps, got ', nsteps_checked
     error stop 1
   end if
 
@@ -59,19 +63,12 @@ contains
     real(wp), intent(in) :: qa
     integer, intent(inout) :: irtrn
 
-    real(wp) :: xmid, yscalar
-    real(wp) :: ymid(n), ystart(n), yend(n)
-    real(wp) :: exact_mid(n)
+     real(wp) :: xmid, yscalar
+     real(wp) :: ymid(n), ystart(n), yend(n)
+     real(wp) :: exact_mid(n), expected_start(n)
 
-    if (nr /= 1) return
-
-    if (iha < 1) then
-      print '(A,I0)', 'expected first accepted step to include at least one bisection, got iha=', iha
-      error stop 1
-    end if
-
-    xmid = 0.5_wp*(xold + x)
-    exact_mid = exact_state(xmid)
+     xmid = 0.5_wp*(xold + x)
+     exact_mid = exact_state(xmid)
 
     call stiff3_interp(xold,x,y,rwork,xmid,ymid)
     call stiff3_interp(xold,x,y,rwork,xmid,2,yscalar)
@@ -87,9 +84,21 @@ contains
       error stop 1
     end if
 
-    call stiff3_interp(xold,x,y,rwork,xold,ystart)
-    if (maxval(abs(ystart - [1.0_wp, 1.0_wp])) > tol_end) then
-      print '(A,2(1X,ES12.4),A)', 'step-start interpolation mismatch: ', ystart, ' expected initial state'
+     if (nr == 1) then
+       expected_start = exact_state(xold)
+     else
+       expected_start = yprev
+       if (abs(xold - xprev) > tol_end) then
+         print '(A,I0,A,ES12.4,A,ES12.4)', &
+           'step-start abscissa mismatch on step ', nr, '. got=', xold, ' expected=', xprev
+         error stop 1
+       end if
+     end if
+
+     call stiff3_interp(xold,x,y,rwork,xold,ystart)
+    if (maxval(abs(ystart - expected_start)) > tol_end) then
+      print '(A,I0,A,2(1X,ES12.4),A,2(1X,ES12.4))', &
+        'step-start interpolation mismatch on step ', nr, '. got=', ystart, ' expected=', expected_start
       error stop 1
     end if
 
@@ -99,8 +108,9 @@ contains
       error stop 1
     end if
 
-    checked_dense_output = .true.
-    irtrn = -1
+     nsteps_checked = nsteps_checked + 1
+     xprev = x
+     yprev = y
   end subroutine
 
   function exact_state(x) result(yexact)

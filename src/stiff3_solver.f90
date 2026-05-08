@@ -198,6 +198,7 @@ contains
     integer :: icon, iha, i, j, nr, irtrn
     integer :: nfev, njev, nlu
     real(wp) :: x_current, xold, h, e, es, q, qa, hmax_used
+    logical :: have_f, need_fend
 
   ! icon = 0 except for last step which ends exactly at x1
     icon = 0
@@ -218,6 +219,7 @@ contains
     nfev = 0
     njev = 0
     nlu = 0
+    have_f = .false.
 
     outer: do
 
@@ -238,8 +240,10 @@ contains
 
     ! evaluate function and jacobian
 
-      call fun(n,y,f)
-      nfev = nfev + 1
+      if (.not. have_f) then
+        call fun(n,y,f)
+        nfev = nfev + 1
+      end if
       call jac(n,y,df)
       njev = njev + 1
 
@@ -321,6 +325,18 @@ contains
       xold = x_current
       x_current = x_current + 2*h
 
+      need_fend = (icon == 0) .or. present(solout)
+      if (need_fend) then
+        call fun(n,y,f)
+        nfev = nfev + 1
+        have_f = .true.
+        if (present(save_interp)) then
+          if (save_interp) ya = f
+        end if
+      else
+        have_f = .false.
+      end if
+
     !  compute new stepsize
 
       qa = min(1.0_wp/(qa + eps),3.0_wp)
@@ -330,12 +346,6 @@ contains
 
       nr = nr + 1
       if (present(solout)) then
-        if (present(save_interp)) then
-          if (save_interp) then
-            call fun(n,y,ya)
-            nfev = nfev + 1
-          end if
-        end if
         irtrn = 0
         call solout(nr,xold,x_current,y,iha,qa,irtrn)
         if (irtrn < 0) then
@@ -390,6 +400,9 @@ contains
     b1 = h*s*(s - 1.0_wp)**2
     b2 = h*(s - 1.0_wp)*s**2
 
+    ! The rwork slices below must match the named associations in stiff3_work:
+    ! yold -> rwork(3*n+1:4*n), fold -> rwork(6*n+1:7*n),
+    ! ya   -> rwork(2*n+1:3*n) once the accepted-step end derivative is stored.
     yeval = a1*rwork(3*n + idx) + a2*y(idx) + &
             b1*rwork(6*n + idx) + b2*rwork(2*n + idx)
   end subroutine
@@ -424,6 +437,9 @@ contains
     b1 = h*s*(s - 1.0_wp)**2
     b2 = h*(s - 1.0_wp)*s**2
 
+    ! The rwork slices below must match the named associations in stiff3_work:
+    ! yold -> rwork(3*n+1:4*n), fold -> rwork(6*n+1:7*n),
+    ! ya   -> rwork(2*n+1:3*n) once the accepted-step end derivative is stored.
     yeval = a1*rwork(3*n+1:4*n) + a2*y + &
             b1*rwork(6*n+1:7*n) + b2*rwork(2*n+1:3*n)
   end subroutine
