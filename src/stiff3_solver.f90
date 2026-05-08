@@ -45,17 +45,23 @@ module stiff3_solver
     end subroutine
 
     !> User supplied subprogram for output.
-    subroutine output_sub(x,y,iha,qa)
+    subroutine output_sub(nr,xold,x,y,iha,qa,irtrn)
       import wp
+      integer, intent(in) :: nr
+        !! Number of successful steps that have been taken
+      real(wp), intent(in) :: xold
+        !! Previous value of the independent variable
       real(wp), intent(in) :: x
         !! Current value of the independent variable
       real(wp), intent(in) :: y(:)
         !! Current value of the dependent variable vector
       integer, intent(in) :: iha
-        !! Number of bisections (unsuccesful integrations) in
+        !! Number of bisections (unsuccessful integrations) in
         !! the current step
       real(wp), intent(in) :: qa
         !! Step-length acceleration factor
+      integer, intent(inout) :: irtrn
+        !! If set < 0 by the callback, integration is interrupted
     end subroutine
 
   end interface
@@ -68,29 +74,29 @@ contains
 
   !> Semi-implicit Runge-Kutta integrator routine
   !
-  subroutine stiff3(n,fun,dfun,out,nprint,x0,x1,h0,eps,w,y)
+  subroutine stiff3(n,fun,dfun,x0,x1,h0,eps,w,y,solout,iout)
     integer, intent(in) :: n
       !! Number of equations to be integrated.
     procedure(rhs_sub) :: fun
       !! User supplied subprogram for function evaluation.
     procedure(jacobian_sub) :: dfun
       !! User supplied subprogram for evaluation of the Jacobian.
-    procedure(output_sub) :: out
-      !! User supplied subprogram for output.
-    integer, intent(in) :: nprint
-      !! Printing interval. For `nprint = k` the solution is only printed.
-      !! at every kth step.
     real(wp), intent(in) :: x0, x1
       !! Limits of the independent variable between which the differential
       !! equation is solved.
     real(wp), intent(inout) :: h0
       !! Suggested initial half-step length. On exit `h0` contains suggested
-      !! value of half-step length for continued integration beyond `x1`.
+      !! value of half-step length for continued integration beyond `x1`,
+      !! or the suggested step size at an interrupted callback return.
     real(wp), intent(in) :: eps, w(n)
       !! Tolerance parameters.
     real(wp), intent(inout) :: y(n)
       !! Vector of dependent variables at `x0`. On exit `y` is the vector of
       !! dependent variables at `x1`.
+    procedure(output_sub), optional :: solout
+      !! User supplied subprogram for output.
+    integer, intent(in), optional :: iout
+      !! Output interval. For `iout = k` output is produced every `k` steps.
 
     real(wp), dimension(n) :: yk1, yk2, ya, yold, yold1, f, fold
       !! Workspace for solution vector and right-hand side
@@ -99,15 +105,24 @@ contains
     integer :: ip(n)
       !! Workspace for the pivot array
 
-    integer :: icon, iha, i, j, nout
-    real(wp) :: x, h, e, es, q, qa
+    integer :: icon, iha, i, j, nr, iout_used, irtrn
+    real(wp) :: x, xold, h, e, es, q, qa
 
   ! icon = 0 except for last step which ends exactly at x1
     icon = 0
 
-    nout = 0
+    nr = 0
     x = x0
     h = h0
+
+    if (.not. present(solout)) then
+      iout_used = 0
+    else if (.not. present(iout)) then
+      iout_used = 1
+    else
+      if (iout < 0) error stop 'stiff3: iout must be >= 0'
+      iout_used = iout
+    end if
 
     outer: do
 
@@ -202,6 +217,7 @@ contains
       do i = 1, n
         y(i) = y(i) + (y(i) - ya(i))/7.0_wp
       end do
+      xold = x
       x = x + 2*h
 
     !  compute new stepsize
@@ -212,9 +228,16 @@ contains
 
     ! perform output if appropriate
 
-      nout = nout + 1
-      if (mod(nout,nprint) == 0 .or. icon == 1) then
-        call out(x,y,iha,qa)
+      nr = nr + 1
+      if (present(solout) .and. iout_used > 0) then
+        if (mod(nr,iout_used) == 0 .or. icon == 1) then
+          irtrn = 0
+          call solout(nr,xold,x,y,iha,qa,irtrn)
+          if (irtrn < 0) then
+            h0 = h
+            return
+          end if
+        end if
       end if
 
     ! exit main loop

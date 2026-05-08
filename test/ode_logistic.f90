@@ -16,7 +16,7 @@ program ode_logistic
   h0 = 0.01_wp
   eps = 1.0e-10_wp
 
-  call stiff3(n,fun,jac,out,1,x0,x1,h0,eps,w,y)
+  call stiff3(n,fun,jac,x0,x1,h0,eps,w,y)
 
   c = (1.0_wp - y0)/y0
   exact = 1.0_wp/(1.0_wp + c*exp(-x1))
@@ -40,13 +40,6 @@ contains
     real(wp), intent(in) :: y(n)
     real(wp), intent(inout) :: df(n,n)
     df(1,1) = 1.0_wp - 2.0_wp*y(1)
-  end subroutine
-
-  subroutine out(x,y,iha,qa)
-    real(wp), intent(in) :: x
-    real(wp), intent(in) :: y(:)
-    integer, intent(in) :: iha
-    real(wp), intent(in) :: qa
   end subroutine
 
 end program
