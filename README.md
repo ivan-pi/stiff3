@@ -22,6 +22,15 @@ This repository provides a heavily refactored version of the original implementa
 - Depends on BLAS and LAPACK for linear algebra operations
 - Supports two build systems: [CMake](https://cmake.org/) and [Fortran Package Manager (fpm)](https://github.com/fortran-lang/fpm)
 
+## Releases
+
+See all releases on GitHub: <https://github.com/ivan-pi/stiff3/releases>
+
+| Major.Minor | Date       | Highlights |
+|-------------|------------|------------|
+| 0.2         | TBD        | Standardized solver call signature, optional runtime stats, optional explicit work arrays |
+| 0.1         | 2023-02-13 | First public release |
+
 ## Installation
 
 To use this project you need to have
