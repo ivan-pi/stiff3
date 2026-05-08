@@ -16,7 +16,7 @@ program ode_stiff_linear
   h0 = 1.0e-3_wp
   eps = 1.0e-10_wp
 
-  call stiff3(n,fun,jac,x0,x1,h0,eps,w,y)
+  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w)
 
   exact2 = exp(x1)
   exact1 = (1000.0_wp/1001.0_wp)*exact2 + (1002.0_wp/1001.0_wp)*exp(-1000.0_wp*x1)

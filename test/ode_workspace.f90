@@ -21,10 +21,10 @@ program ode_workspace
   allocate(rwork(n*(7 + 2*n)))
   allocate(iwork(n))
 
-  call stiff3(n,fun,jac,x0,x1,h0,eps,w,y_auto,stats=stats_auto)
+  call stiff3(n,fun,x0,y_auto,x1,jac,h0,eps,w,stats=stats_auto)
 
   h0 = 0.02_wp
-  call stiff3(n,fun,jac,x0,x1,h0,eps,w,y_work,rwork,iwork,stats=stats_work)
+  call stiff3(n,fun,x0,y_work,x1,jac,h0,eps,w,rwork,iwork,stats=stats_work)
 
   if (any(y_auto /= y_work)) then
     print '(A,2(1X,ES12.4),A,2(1X,ES12.4))', &

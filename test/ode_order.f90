@@ -23,7 +23,7 @@ program ode_order
     x1 = hs(i)
     h0 = hs(i)/2.0_wp
 
-    call stiff3(n,fun,jac,x0,x1,h0,eps,w,y)
+    call stiff3(n,fun,x0,y,x1,jac,h0,eps,w)
     err(i) = max(abs(y(1)-cos(x1)),abs(y(2)+sin(x1)))
   end do
 
