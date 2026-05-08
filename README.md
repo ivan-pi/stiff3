@@ -12,6 +12,7 @@ This repository provides a refactored version with a simplified procedural inter
 - Adaptive stepsize control with error tolerance per component
 - Optional maximum absolute half-step size (`hmax`) to cap step growth
 - Optional runtime statistics output: rhs evaluations (`nfev`), Jacobian evaluations (`njev`), and LU decompositions (`nlu`)
+- Optional explicit workspace interface via `stiff3(..., rwork, iwork, ...)` for caller-managed memory
 - Requires an exact user-supplied Jacobian
 - Depends on BLAS and LAPACK for linear algebra operations
 - Supports two build systems: [CMake](https://cmake.org/) and [Fortran Package Manager (fpm)](https://github.com/fortran-lang/fpm)
@@ -150,6 +151,8 @@ The two tolerance parameters `eps` and `w` together control how accurately the s
 - **`w(i)`** — a positive weight for each solution component `i`. Setting all weights to `1.0` applies the same accuracy goal uniformly across all components. Increasing `w(i)` relative to the others tightens the tolerance on component `i`.
 
 A reasonable first choice is `eps = 1.0e-4` with all `w(i) = 1.0`, which requests roughly four significant digits from every component.
+
+For interoperability scenarios where the caller manages memory allocation (e.g. language bindings), `stiff3` also provides an overload with explicit work arrays: `rwork` of size at least `n*(7 + 2*n)` and `iwork` of size at least `n`.
 
 You can also optionally pass `hmax` to limit the absolute half-step size used by the adaptive controller. If `hmax` is omitted or set to `0`, the default is `abs(x1-x0)`. If provided and positive, the solver uses `min(hmax, abs(x1-x0))`. Negative values are rejected.
 
