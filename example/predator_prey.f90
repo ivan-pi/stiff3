@@ -8,6 +8,7 @@ program predator_prey
   real(wp), parameter :: alpha = 1.1_wp, beta = 0.4_wp
   real(wp), parameter :: delta = 0.1_wp, gamma = 0.4_wp
   real(wp) :: y(n), w(n), x0, x1, h0, eps
+  integer :: irtrn
 
 ! initial value
   y = [10.0_wp, 5.0_wp]
@@ -19,6 +20,9 @@ program predator_prey
 ! time interval
   x0 = 0.0_wp
   x1 = 40.0_wp
+! output initial condition
+  irtrn = 0
+  call out(0,x0,x0,y,0,0.0_wp,irtrn)
 ! integrate system of ODEs
   call stiff3(n,fun,jac,x0,x1,h0,eps,w,y,solout=out,iout=nout)
 

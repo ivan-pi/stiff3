@@ -16,7 +16,7 @@ program ode_stiff_linear
   h0 = 1.0e-3_wp
   eps = 1.0e-10_wp
 
-  call stiff3(n,fun,jac,x0,x1,h0,eps,w,y,solout=out,iout=1)
+  call stiff3(n,fun,jac,x0,x1,h0,eps,w,y)
 
   exact2 = exp(x1)
   exact1 = (1000.0_wp/1001.0_wp)*exact2 + (1002.0_wp/1001.0_wp)*exp(-1000.0_wp*x1)
@@ -44,16 +44,6 @@ contains
     df(1,2) = 1000.0_wp
     df(2,1) = 0.0_wp
     df(2,2) = 1.0_wp
-  end subroutine
-
-  subroutine out(nr,xold,x,y,iha,qa,irtrn)
-    integer, intent(in) :: nr
-    real(wp), intent(in) :: xold
-    real(wp), intent(in) :: x
-    real(wp), intent(in) :: y(:)
-    integer, intent(in) :: iha
-    real(wp), intent(in) :: qa
-    integer, intent(inout) :: irtrn
   end subroutine
 
 end program

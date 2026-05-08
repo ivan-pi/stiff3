@@ -42,12 +42,9 @@ contains
   end subroutine
 
   subroutine out(nr,xold,x,y,iha,qa,irtrn)
-    integer, intent(in) :: nr
+    integer, intent(in) :: nr, iha
     real(wp), intent(in) :: xold
-    real(wp), intent(in) :: x
-    real(wp), intent(in) :: y(:)
-    integer, intent(in) :: iha
-    real(wp), intent(in) :: qa
+    real(wp), intent(in) :: x, y(:), qa
     integer, intent(inout) :: irtrn
   end subroutine
 

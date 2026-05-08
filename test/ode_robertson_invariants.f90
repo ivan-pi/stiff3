@@ -17,7 +17,7 @@ program ode_robertson_invariants
   h0 = 1.0e-4_wp
   eps = 1.0e-7_wp
 
-  call stiff3(n,fun,jac,x0,x1,h0,eps,w,y,solout=out,iout=1)
+  call stiff3(n,fun,jac,x0,x1,h0,eps,w,y)
 
   mass = sum(y)
   if (abs(mass - 1.0_wp) > sum_tol) then
@@ -54,16 +54,6 @@ contains
     df(3,1) = 0.0_wp
     df(3,2) = 6.0e7_wp*y(2)
     df(3,3) = 0.0_wp
-  end subroutine
-
-  subroutine out(nr,xold,x,y,iha,qa,irtrn)
-    integer, intent(in) :: nr
-    real(wp), intent(in) :: xold
-    real(wp), intent(in) :: x
-    real(wp), intent(in) :: y(:)
-    integer, intent(in) :: iha
-    real(wp), intent(in) :: qa
-    integer, intent(inout) :: irtrn
   end subroutine
 
 end program

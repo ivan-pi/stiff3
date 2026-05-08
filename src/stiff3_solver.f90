@@ -48,7 +48,7 @@ module stiff3_solver
     subroutine output_sub(nr,xold,x,y,iha,qa,irtrn)
       import wp
       integer, intent(in) :: nr
-        !! Number of successful steps that have been taken (zero at initial callback)
+        !! Number of successful steps that have been taken
       real(wp), intent(in) :: xold
         !! Previous value of the independent variable
       real(wp), intent(in) :: x
@@ -57,9 +57,9 @@ module stiff3_solver
         !! Current value of the dependent variable vector
       integer, intent(in) :: iha
         !! Number of bisections (unsuccessful integrations) in
-        !! the current step (set to zero for the initial callback)
+        !! the current step
       real(wp), intent(in) :: qa
-        !! Step-length acceleration factor (set to zero for the initial callback)
+        !! Step-length acceleration factor
       integer, intent(inout) :: irtrn
         !! If set < 0 by the callback, integration is interrupted
     end subroutine
@@ -122,15 +122,6 @@ contains
     else
       if (iout < 0) error stop 'stiff3: iout must be >= 0'
       iout_used = iout
-    end if
-
-    if (present(solout) .and. iout_used > 0) then
-      irtrn = 0
-      ! Initial grid-point callback: xold == x == x0 by construction.
-      call solout(nr,x0,x0,y,0,0.0_wp,irtrn)
-      if (irtrn < 0) then
-        return
-      end if
     end if
 
     outer: do
