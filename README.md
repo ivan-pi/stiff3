@@ -23,7 +23,7 @@ See all releases on GitHub: <https://github.com/ivan-pi/stiff3/releases>
 
 | Major.Minor | Date       | Highlights |
 |-------------|------------|------------|
-| 0.2         | TBD        | Standardized solver call signature, optional runtime stats, optional explicit work arrays, and dense output helper `contd3` |
+| 0.2         | TBD        | Standardized solver call signature, optional runtime stats, optional explicit work arrays |
 | 0.1         | 2023-02-13 | First public release |
 
 ## Installation
