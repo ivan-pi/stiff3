@@ -56,11 +56,10 @@ stiff3.git = "https://github.com/ivan-pi/stiff3"
 
 ### Running the examples
 
-Two example programs called `robertson` and `vanpol` are provided. With fpm they can be run with:
+Four examples called `robertson`, `vanpol`, `lorenz`, and `predator_prey` are provided. They can be run with the command
 
 ```sh
-fpm run --example robertson
-fpm run --example vanpol
+fpm run --example <name>
 ```
 
 With CMake, the compiled executables are placed in the `build/example/` directory and can be run directly or via CTest.
