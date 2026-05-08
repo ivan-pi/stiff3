@@ -1,10 +1,15 @@
 # stiff3
 
-`stiff3` is a Fortran library for solving stiff autonomous systems of ordinary differential equations (ODEs) using a Rosenbrock-type (semi-implicit Runge-Kutta) method of third order. The `stiff3` source code was originally published in the work:
+**`stiff3` is a Fortran library for solving stiff, autonomous, first-order ODE systems using a 3rd-order Rosenbrock (semi-implicit Runge-Kutta) method.**
 
-> Villadsen, J., & Michelsen, M. L. (1978). *Solution of differential equation models by polynomial approximation*. Prentice-Hall, Inc.
+It solves initial value problems of the form:
+```text
+  y'(t) = f(y),   y(t0) = y0
+```
 
-This repository provides a refactored version with a simplified procedural interface.
+This repository provides a heavily refactored version of the original implementation by Villadsen & Michelsen (1978).
+
+> **Original source:** Villadsen, J., and Michelsen, M. L. *Solution of Differential Equation Models by Polynomial Approximation.* Prentice-Hall, Inc., 1978.
 
 ## Features
 
