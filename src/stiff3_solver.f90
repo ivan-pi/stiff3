@@ -118,7 +118,7 @@ contains
     nr = 0
     x = x0
     if (present(hmax)) then
-      if (hmax < 0.0_wp) error stop "hmax must be a positive value"
+      if (hmax < 0.0_wp) error stop "hmax must be a non-negative value"
       if (hmax == 0.0_wp) then
         hmax_used = abs(x1 - x0)
       else
