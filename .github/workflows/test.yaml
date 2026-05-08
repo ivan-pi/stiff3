@@ -26,7 +26,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [macos-latest]
 
     steps:
     - name: Checkout code
@@ -44,21 +44,8 @@ jobs:
         echo "FC=${FC_PATH}" >> "$GITHUB_ENV"
         echo "FPM_FC=${FC_PATH}" >> "$GITHUB_ENV"
 
-    - name: Install flang Linux
-      if: contains(matrix.os, 'ubuntu')
-      uses: fortran-lang/setup-fortran@v1
-      with:
-        compiler: aocc
-        version: '5.1.0'
-
-    - name: Install LAPACK and BLAS Linux
-      if: contains(matrix.os, 'ubuntu')
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y liblapack-dev libblas-dev
-
     - name: Set flang compiler
-      if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+      if: contains(matrix.os, 'macos')
       run: |
         FC_PATH="$(command -v flang || command -v flang-new)"
         if [ -z "${FC_PATH}" ]; then
@@ -69,7 +56,7 @@ jobs:
         echo "FPM_FC=${FC_PATH}" >> "$GITHUB_ENV"
 
     - name: Install fpm
-      uses: fortran-lang/setup-fpm@v5
+      uses: fortran-lang/setup-fpm@v7
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
 
