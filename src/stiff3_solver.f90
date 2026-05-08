@@ -118,6 +118,7 @@ contains
     nfev = 0
     njev = 0
     nlu = 0
+    if (present(stats)) stats = [nfev, njev, nlu]
 
     outer: do
 
