@@ -110,7 +110,7 @@ contains
   ! icon = 0 except for last step which ends exactly at x1
     icon = 0
 
-    nr = 0
+    nr = 1
     x = x0
     h = h0
 
@@ -121,6 +121,15 @@ contains
     else
       if (iout < 0) error stop 'stiff3: iout must be >= 0'
       iout_used = iout
+    end if
+
+    if (present(solout) .and. iout_used > 0) then
+      irtrn = 0
+      call solout(nr,x0,x0,y,0,1.0_wp,irtrn)
+      if (irtrn < 0) then
+        h0 = h
+        return
+      end if
     end if
 
     outer: do
@@ -229,7 +238,7 @@ contains
 
       nr = nr + 1
       if (present(solout) .and. iout_used > 0) then
-        if (mod(nr,iout_used) == 0 .or. icon == 1) then
+        if (mod(nr-1,iout_used) == 0 .or. icon == 1) then
           irtrn = 0
           call solout(nr,xold,x,y,iha,qa,irtrn)
           if (irtrn < 0) then
