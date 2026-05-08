@@ -5,7 +5,7 @@ program ode_stats
   implicit none
 
   integer, parameter :: n = 1
-  real(wp), parameter :: lambda = 2.0_wp
+  real(wp), parameter :: decay_rate = 2.0_wp
   real(wp) :: y(n), w(n), x0, x1, h0, eps
   integer :: stats(3)
 
@@ -34,14 +34,14 @@ contains
     integer, intent(in) :: n
     real(wp), intent(in) :: y(n)
     real(wp), intent(inout) :: f(n)
-    f(1) = -lambda*y(1)
+    f(1) = -decay_rate*y(1)
   end subroutine
 
   subroutine jac(n,y,df)
     integer, intent(in) :: n
     real(wp), intent(in) :: y(n)
     real(wp), intent(inout) :: df(n,n)
-    df(1,1) = -lambda
+    df(1,1) = -decay_rate
   end subroutine
 
 end program
