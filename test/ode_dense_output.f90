@@ -65,7 +65,7 @@ contains
 
     if (nr /= 1) return
 
-    if (iha <= 0) then
+    if (iha < 1) then
       print '(A,I0)', 'expected first accepted step to include at least one bisection, got iha=', iha
       error stop 1
     end if
