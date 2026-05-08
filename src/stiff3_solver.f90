@@ -154,7 +154,7 @@ contains
       !! `abs(x1 - x0)`.
 
     call stiff3_core(n,fun,dfun,x0,x1,h0,eps,w,y, &
-                     yk1   = rwork(0*n+1), &
+                     yk1   = rwork(1), &
                      yk2   = rwork(1*n+1), &
                      ya    = rwork(2*n+1), &
                      yold  = rwork(3*n+1), &
