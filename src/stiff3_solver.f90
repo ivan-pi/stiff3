@@ -155,14 +155,14 @@ contains
 
     call stiff3_core(n,fun,dfun,x0,x1,h0,eps,w,y, &
                      yk1   = rwork(1), &
-                     yk2   = rwork(1*n+1), &
+                     yk2   = rwork(n+1), &
                      ya    = rwork(2*n+1), &
                      yold  = rwork(3*n+1), &
                      yold1 = rwork(4*n+1), &
                      f     = rwork(5*n+1), &
                      fold  = rwork(6*n+1), &
                      df    = rwork(7*n+1), &
-                     dfold = rwork(n*(n+7)+1), &
+                     dfold = rwork(7*n+n*n+1), &
                      ip    = iwork(1), &
                      solout=solout,stats=stats,hmax=hmax)
 
