@@ -68,7 +68,7 @@ program main
 
   irtrn = 0
   call output(0,x0,x0,y,0,0.0_wp,irtrn)
-  call stiff3(n,fun,dfun,x0,x1,h0,eps,w,y,solout=output)
+  call stiff3(n,fun,x0,y,x1,dfun,h0,eps,w,solout=output)
 
 contains
 

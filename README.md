@@ -98,7 +98,7 @@ program vanpol
   irtrn = 0
   call out(0,x0,x0,y,0,0.0_wp,irtrn)
 ! integrate system of ODEs
-  call stiff3(n,fun,jac,x0,x1,h0,eps,w,y,solout=out,stats=stats,hmax=hmax)
+  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,solout=out,stats=stats,hmax=hmax)
   print '(A,3(I0,1X))', 'nfev njev nlu: ', stats
 
 contains

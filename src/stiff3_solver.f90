@@ -79,14 +79,14 @@ contains
 
   !> Semi-implicit Runge-Kutta integrator routine
   !
-  subroutine stiff3_auto(n,fun,dfun,x0,x1,h0,eps,w,y,solout,stats,hmax)
+  subroutine stiff3_auto(n,fun,x,y,xend,jac,h0,eps,w,solout,stats,hmax)
     integer, intent(in) :: n
       !! Number of equations to be integrated.
     procedure(rhs_sub) :: fun
       !! User supplied subprogram for function evaluation.
-    procedure(jacobian_sub) :: dfun
+    procedure(jacobian_sub) :: jac
       !! User supplied subprogram for evaluation of the Jacobian.
-    real(wp), intent(in) :: x0, x1
+    real(wp), intent(in) :: x, xend
       !! Limits of the independent variable between which the differential
       !! equation is solved.
     real(wp), intent(inout) :: h0
@@ -96,15 +96,15 @@ contains
     real(wp), intent(in) :: eps, w(n)
       !! Tolerance parameters.
     real(wp), intent(inout) :: y(n)
-      !! Vector of dependent variables at `x0`. On exit `y` is the vector of
-      !! dependent variables at `x1`.
+      !! Vector of dependent variables at `x`. On exit `y` is the vector of
+      !! dependent variables at `xend`.
     procedure(output_sub), optional :: solout
       !! User supplied subprogram for output.
     integer, intent(out), optional :: stats(3)
       !! Statistics array with `[nfev, njev, nlu]`.
     real(wp), intent(in), optional :: hmax
       !! Maximum absolute half-step size. If absent or zero, defaults to
-      !! `abs(x1 - x0)`.
+      !! `abs(xend - x)`.
 
     real(wp), dimension(n) :: yk1, yk2, ya, yold, yold1, f, fold
       !! Workspace for solution vector and right-hand side
@@ -113,7 +113,7 @@ contains
     integer :: ip(n)
       !! Workspace for the pivot array
 
-    call stiff3_core(n,fun,dfun,x0,x1,h0,eps,w,y, &
+    call stiff3_core(n,fun,x,y,xend,jac,h0,eps,w, &
                      yk1,yk2,ya,yold,yold1,f,fold,df,dfold,ip, &
                      solout,stats,hmax)
 
@@ -122,14 +122,14 @@ contains
 
   !> Semi-implicit Runge-Kutta integrator routine with explicit workspace
   !
-  subroutine stiff3_work(n,fun,dfun,x0,x1,h0,eps,w,y,rwork,iwork,solout,stats,hmax)
+  subroutine stiff3_work(n,fun,x,y,xend,jac,h0,eps,w,rwork,iwork,solout,stats,hmax)
     integer, intent(in) :: n
       !! Number of equations to be integrated.
     procedure(rhs_sub) :: fun
       !! User supplied subprogram for function evaluation.
-    procedure(jacobian_sub) :: dfun
+    procedure(jacobian_sub) :: jac
       !! User supplied subprogram for evaluation of the Jacobian.
-    real(wp), intent(in) :: x0, x1
+    real(wp), intent(in) :: x, xend
       !! Limits of the independent variable between which the differential
       !! equation is solved.
     real(wp), intent(inout) :: h0
@@ -139,8 +139,8 @@ contains
     real(wp), intent(in) :: eps, w(n)
       !! Tolerance parameters.
     real(wp), intent(inout) :: y(n)
-      !! Vector of dependent variables at `x0`. On exit `y` is the vector of
-      !! dependent variables at `x1`.
+      !! Vector of dependent variables at `x`. On exit `y` is the vector of
+      !! dependent variables at `xend`.
     real(wp), intent(inout) :: rwork(n*(7 + 2*n))
       !! Real workspace of size `n*(7 + 2*n)`.
     integer, intent(inout) :: iwork(n)
@@ -151,9 +151,9 @@ contains
       !! Statistics array with `[nfev, njev, nlu]`.
     real(wp), intent(in), optional :: hmax
       !! Maximum absolute half-step size. If absent or zero, defaults to
-      !! `abs(x1 - x0)`.
+      !! `abs(xend - x)`.
 
-    call stiff3_core(n,fun,dfun,x0,x1,h0,eps,w,y, &
+    call stiff3_core(n,fun,x,y,xend,jac,h0,eps,w, &
                      yk1   = rwork(1), &
                      yk2   = rwork(n+1), &
                      ya    = rwork(2*n+1), &
@@ -171,13 +171,13 @@ contains
 
   !> Semi-implicit Runge-Kutta integrator routine core implementation
   !
-  subroutine stiff3_core(n,fun,dfun,x0,x1,h0,eps,w,y, &
+  subroutine stiff3_core(n,fun,x,y,xend,jac,h0,eps,w, &
                          yk1,yk2,ya,yold,yold1,f,fold,df,dfold,ip, &
                          solout,stats,hmax)
     integer, intent(in) :: n
     procedure(rhs_sub) :: fun
-    procedure(jacobian_sub) :: dfun
-    real(wp), intent(in) :: x0, x1
+    procedure(jacobian_sub) :: jac
+    real(wp), intent(in) :: x, xend
     real(wp), intent(inout) :: h0
     real(wp), intent(in) :: eps, w(n)
     real(wp), intent(inout) :: y(n)
@@ -190,22 +190,22 @@ contains
 
     integer :: icon, iha, i, j, nr, irtrn
     integer :: nfev, njev, nlu
-    real(wp) :: x, xold, h, e, es, q, qa, hmax_used
+    real(wp) :: x_current, xold, h, e, es, q, qa, hmax_used
 
   ! icon = 0 except for last step which ends exactly at x1
     icon = 0
 
     nr = 0
-    x = x0
+    x_current = x
     if (present(hmax)) then
       if (hmax < 0.0_wp) error stop 'stiff3: hmax must be a non-negative real value'
       if (hmax == 0.0_wp) then
-        hmax_used = abs(x1 - x0)
+        hmax_used = abs(xend - x_current)
       else
-        hmax_used = min(hmax,abs(x1 - x0))
+        hmax_used = min(hmax,abs(xend - x_current))
       end if
     else
-      hmax_used = abs(x1 - x0)
+      hmax_used = abs(xend - x_current)
     end if
     h = min(h0,hmax_used)
     nfev = 0
@@ -216,15 +216,15 @@ contains
 
     ! last step - or first step longer than interval
 
-      if ((x + 2.0_wp*h >= x1) .and. ((x1 - x)/2.0_wp <= hmax_used)) then
-        h = (x1 - x)/2.0_wp
+      if ((x_current + 2.0_wp*h >= xend) .and. ((xend - x_current)/2.0_wp <= hmax_used)) then
+        h = (xend - x_current)/2.0_wp
         icon = 1
       end if
 
     ! other steps - limit to one quarter of remaining interval
 
-      if ((icon == 0) .and. (x + 4.0_wp*h > x1)) then
-        h = (x1 - x)/4.0_wp
+      if ((icon == 0) .and. (x_current + 4.0_wp*h > xend)) then
+        h = (xend - x_current)/4.0_wp
       end if
 
       h = min(h,hmax_used)
@@ -233,7 +233,7 @@ contains
 
       call fun(n,y,f)
       nfev = nfev + 1
-      call dfun(n,y,df)
+      call jac(n,y,df)
       njev = njev + 1
 
     ! keep values which are used in half-step integration
@@ -269,7 +269,7 @@ contains
         call sirk3(n,fun,ip,f,y,yk1,yk2,df,h,nfev,nlu)
         call fun(n,y,f)
         nfev = nfev + 1
-        call dfun(n,y,df)
+        call jac(n,y,df)
         njev = njev + 1
 
         yold1 = y
@@ -311,8 +311,8 @@ contains
       do i = 1, n
         y(i) = y(i) + (y(i) - ya(i))/7.0_wp
       end do
-      xold = x
-      x = x + 2*h
+      xold = x_current
+      x_current = x_current + 2*h
 
     !  compute new stepsize
 
@@ -324,7 +324,7 @@ contains
       nr = nr + 1
       if (present(solout)) then
         irtrn = 0
-        call solout(nr,xold,x,y,iha,qa,irtrn)
+        call solout(nr,xold,x_current,y,iha,qa,irtrn)
         if (irtrn < 0) then
           h0 = h
           if (present(stats)) stats = [nfev, njev, nlu]

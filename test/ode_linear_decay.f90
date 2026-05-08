@@ -16,7 +16,7 @@ program ode_linear_decay
   h0 = 0.01_wp
   eps = 1.0e-10_wp
 
-  call stiff3(n,fun,jac,x0,x1,h0,eps,w,y)
+  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w)
 
   exact = exp(-lambda*x1)
   err = abs(y(1) - exact)

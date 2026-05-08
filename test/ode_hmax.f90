@@ -19,11 +19,11 @@ program ode_hmax
 
   y_default = [1.0_wp]
   h0 = h0_start
-  call stiff3(n,fun,jac,x0,x1,h0,eps_test,w,y_default,stats=stats_default)
+  call stiff3(n,fun,x0,y_default,x1,jac,h0,eps_test,w,stats=stats_default)
 
   y_zero = [1.0_wp]
   h0 = h0_start
-  call stiff3(n,fun,jac,x0,x1,h0,eps_test,w,y_zero,stats=stats_zero,hmax=0.0_wp)
+  call stiff3(n,fun,x0,y_zero,x1,jac,h0,eps_test,w,stats=stats_zero,hmax=0.0_wp)
 
   if (any(stats_zero /= stats_default)) then
     print '(A,3(I0,1X),A,3(I0,1X))', &
@@ -40,7 +40,7 @@ program ode_hmax
   y_capped = [1.0_wp]
   h0 = h0_start
   max_h_seen = 0.0_wp
-  call stiff3(n,fun,jac,x0,x1,h0,eps_test,w,y_capped,solout=out_cap,stats=stats_capped,hmax=hmax_cap)
+  call stiff3(n,fun,x0,y_capped,x1,jac,h0,eps_test,w,solout=out_cap,stats=stats_capped,hmax=hmax_cap)
 
   if (max_h_seen > hmax_cap + tol) then
     print '(A,ES12.4,A,ES12.4)', 'observed half-step exceeds hmax cap: ', max_h_seen, ' > ', hmax_cap

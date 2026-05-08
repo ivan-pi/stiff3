@@ -16,7 +16,7 @@ program ode_logistic
   h0 = 0.01_wp
   eps = 1.0e-10_wp
 
-  call stiff3(n,fun,jac,x0,x1,h0,eps,w,y)
+  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w)
 
   c = (1.0_wp - y0)/y0
   exact = 1.0_wp/(1.0_wp + c*exp(-x1))

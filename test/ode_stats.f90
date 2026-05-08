@@ -48,7 +48,7 @@ program ode_stats
   fun_calls = 0
   jac_calls = 0
 
-  call stiff3(n,fun,jac,x0,x1,h0,eps,w,y,stats=stats)
+  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,stats=stats)
 
   if (stats(1) /= fun_calls .or. stats(2) /= jac_calls) then
     print '(A,3(I0,1X),A,2(I0,1X))', &
