@@ -121,7 +121,7 @@ contains
     call stiff3_core(n,fun,x,y,xend,jac,h0,eps,w, &
                      yk1=yk1,yk2=yk2,ya=ya,yold=yold,yold1=yold1, &
                      f=f,fold=fold,df=df,dfold=dfold,ip=ip, &
-                     solout=solout,stats=stats,hmax=hmax,save_interp=.false.)
+                     solout=solout,stats=stats,hmax=hmax)
 
   end subroutine
 
@@ -170,7 +170,7 @@ contains
                      df    = rwork(7*n+1), &
                      dfold = rwork(7*n+n*n+1), &
                      ip    = iwork(1), &
-                     solout=solout,stats=stats,hmax=hmax,save_interp=.true.)
+                     solout=solout,stats=stats,hmax=hmax)
 
   end subroutine
 
@@ -179,7 +179,7 @@ contains
   !
   subroutine stiff3_core(n,fun,x,y,xend,jac,h0,eps,w, &
                          yk1,yk2,ya,yold,yold1,f,fold,df,dfold,ip, &
-                         solout,stats,hmax,save_interp)
+                         solout,stats,hmax)
     integer, intent(in) :: n
     procedure(rhs_sub) :: fun
     procedure(jacobian_sub) :: jac
@@ -193,12 +193,11 @@ contains
     procedure(output_sub), optional :: solout
     integer, intent(out), optional :: stats(3)
     real(wp), intent(in), optional :: hmax
-    logical, intent(in), optional :: save_interp
 
     integer :: icon, iha, i, j, nr, irtrn
     integer :: nfev, njev, nlu
     real(wp) :: x_current, xold, h, e, es, q, qa, hmax_used
-    logical :: have_f, need_fend
+    logical :: have_f
 
   ! icon = 0 except for last step which ends exactly at x1
     icon = 0
@@ -241,6 +240,7 @@ contains
     ! evaluate function and jacobian
 
       if (.not. have_f) then
+        ! On the first accepted step there is no saved endpoint rhs yet.
         call fun(n,y,f)
         nfev = nfev + 1
       end if
@@ -325,17 +325,11 @@ contains
       xold = x_current
       x_current = x_current + 2*h
 
-      need_fend = (icon == 0) .or. present(solout)
-      if (need_fend) then
-        call fun(n,y,f)
-        nfev = nfev + 1
-        have_f = .true.
-        if (present(save_interp)) then
-          if (save_interp) ya = f
-        end if
-      else
-        have_f = .false.
-      end if
+    ! evaluate rhs at the accepted-step end so it is ready for the next step
+    ! and available in the explicit-workspace path through rwork(5*n+1:6*n)
+      call fun(n,y,f)
+      nfev = nfev + 1
+      have_f = .true.
 
     !  compute new stepsize
 
@@ -402,10 +396,9 @@ contains
 
     ! The rwork slices below must match the named associations in stiff3_work:
     ! yold -> rwork(3*n+1:4*n), fold -> rwork(6*n+1:7*n),
-    ! ya   -> rwork(2*n+1:3*n) after stiff3_core stores the accepted-step end
-    !         derivative there before calling solout when save_interp is true.
+    ! f    -> rwork(5*n+1:6*n), holding the accepted-step end derivative.
     yeval = a1*rwork(3*n + idx) + a2*y(idx) + &
-            b1*rwork(6*n + idx) + b2*rwork(2*n + idx)
+            b1*rwork(6*n + idx) + b2*rwork(5*n + idx)
   end subroutine
 
 
@@ -440,10 +433,9 @@ contains
 
     ! The rwork slices below must match the named associations in stiff3_work:
     ! yold -> rwork(3*n+1:4*n), fold -> rwork(6*n+1:7*n),
-    ! ya   -> rwork(2*n+1:3*n) after stiff3_core stores the accepted-step end
-    !         derivative there before calling solout when save_interp is true.
+    ! f    -> rwork(5*n+1:6*n), holding the accepted-step end derivative.
     yeval = a1*rwork(3*n+1:4*n) + a2*y + &
-            b1*rwork(6*n+1:7*n) + b2*rwork(2*n+1:3*n)
+            b1*rwork(6*n+1:7*n) + b2*rwork(5*n+1:6*n)
   end subroutine
 
 

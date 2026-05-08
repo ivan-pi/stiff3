@@ -9,8 +9,8 @@ program ode_dense_output
   real(wp), parameter :: tol_end = 1.0e-12_wp
   real(wp), parameter :: hmax = 0.05_wp
   real(wp) :: y(n), w(n), x0, x1, h0, eps
-  real(wp), allocatable :: rwork(:)
-  integer, allocatable :: iwork(:)
+  real(wp) :: rwork(n*(7 + 2*n))
+  integer :: iwork(n)
   integer :: nsteps_checked
   real(wp) :: yprev(n), xprev
 
@@ -23,9 +23,6 @@ program ode_dense_output
   nsteps_checked = 0
   xprev = x0
   yprev = y
-
-  allocate(rwork(n*(7 + 2*n)))
-  allocate(iwork(n))
 
   call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,rwork,iwork,solout=check_dense_output,hmax=hmax)
 
@@ -54,6 +51,14 @@ contains
     df(2,2) = -50.0_wp
   end subroutine
 
+  function exact_state(x) result(yexact)
+    real(wp), intent(in) :: x
+    real(wp) :: yexact(n)
+
+    yexact(1) = exp(-x)
+    yexact(2) = exp(-50.0_wp*x)
+  end function
+
   subroutine check_dense_output(nr,xold,x,y,iha,qa,irtrn)
     integer, intent(in) :: nr
     real(wp), intent(in) :: xold
@@ -67,6 +72,9 @@ contains
     real(wp) :: ymid(n), ystart(n), yend(n)
     real(wp) :: exact_mid(n), expected_start(n)
 
+    ! Exercise interpolation inside every callback using the accepted-step
+    ! interval [xold, x]. The saved xprev/yprev pair tracks the previous
+    ! accepted endpoint so the start of each new interpolant can be checked.
     xmid = 0.5_wp*(xold + x)
     exact_mid = exact_state(xmid)
 
@@ -87,7 +95,7 @@ contains
     if (nr == 1) then
       expected_start = exact_state(xold)
     else
-        expected_start = yprev
+      expected_start = yprev
       if (abs(xold - xprev) > tol_end) then
         print '(A,I0,A,ES12.4,A,ES12.4)', &
           'step-start x-coordinate mismatch on step ', nr, '. got=', xold, ' expected=', xprev
@@ -112,13 +120,5 @@ contains
     xprev = x
     yprev = y
   end subroutine
-
-  function exact_state(x) result(yexact)
-    real(wp), intent(in) :: x
-    real(wp) :: yexact(n)
-
-    yexact(1) = exp(-x)
-    yexact(2) = exp(-50.0_wp*x)
-  end function
 
 end program
