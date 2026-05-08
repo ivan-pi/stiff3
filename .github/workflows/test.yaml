@@ -37,6 +37,10 @@ jobs:
       run: |
         brew install flang
         FC_PATH="$(command -v flang || command -v flang-new)"
+        if [ -z "${FC_PATH}" ]; then
+          echo "flang compiler not found on PATH" >&2
+          exit 1
+        fi
         echo "FC=${FC_PATH}" >> "$GITHUB_ENV"
         echo "FPM_FC=${FC_PATH}" >> "$GITHUB_ENV"
 
@@ -46,6 +50,10 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y flang liblapack-dev libblas-dev
         FC_PATH="$(command -v flang || command -v flang-new)"
+        if [ -z "${FC_PATH}" ]; then
+          echo "flang compiler not found on PATH" >&2
+          exit 1
+        fi
         echo "FC=${FC_PATH}" >> "$GITHUB_ENV"
         echo "FPM_FC=${FC_PATH}" >> "$GITHUB_ENV"
 
