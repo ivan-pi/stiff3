@@ -63,12 +63,12 @@ contains
     real(wp), intent(in) :: qa
     integer, intent(inout) :: irtrn
 
-     real(wp) :: xmid, yscalar
-     real(wp) :: ymid(n), ystart(n), yend(n)
-     real(wp) :: exact_mid(n), expected_start(n)
+    real(wp) :: xmid, yscalar
+    real(wp) :: ymid(n), ystart(n), yend(n)
+    real(wp) :: exact_mid(n), expected_start(n)
 
-     xmid = 0.5_wp*(xold + x)
-     exact_mid = exact_state(xmid)
+    xmid = 0.5_wp*(xold + x)
+    exact_mid = exact_state(xmid)
 
     call stiff3_interp(xold,x,y,rwork,xmid,ymid)
     call stiff3_interp(xold,x,y,rwork,xmid,2,yscalar)
@@ -84,18 +84,18 @@ contains
       error stop 1
     end if
 
-     if (nr == 1) then
-       expected_start = exact_state(xold)
-     else
-       expected_start = yprev
-       if (abs(xold - xprev) > tol_end) then
-         print '(A,I0,A,ES12.4,A,ES12.4)', &
-           'step-start abscissa mismatch on step ', nr, '. got=', xold, ' expected=', xprev
-         error stop 1
-       end if
-     end if
+    if (nr == 1) then
+      expected_start = exact_state(xold)
+    else
+      expected_start = yprev
+      if (abs(xold - xprev) > tol_end) then
+        print '(A,I0,A,ES12.4,A,ES12.4)', &
+          'step-start abscissa mismatch on step ', nr, '. got=', xold, ' expected=', xprev
+        error stop 1
+      end if
+    end if
 
-     call stiff3_interp(xold,x,y,rwork,xold,ystart)
+    call stiff3_interp(xold,x,y,rwork,xold,ystart)
     if (maxval(abs(ystart - expected_start)) > tol_end) then
       print '(A,I0,A,2(1X,ES12.4),A,2(1X,ES12.4))', &
         'step-start interpolation mismatch on step ', nr, '. got=', ystart, ' expected=', expected_start
@@ -108,9 +108,9 @@ contains
       error stop 1
     end if
 
-     nsteps_checked = nsteps_checked + 1
-     xprev = x
-     yprev = y
+    nsteps_checked = nsteps_checked + 1
+    xprev = x
+    yprev = y
   end subroutine
 
   function exact_state(x) result(yexact)
