@@ -125,7 +125,7 @@ contains
 
     if (present(solout) .and. iout_used > 0) then
       irtrn = 0
-      call solout(nr,x0,x0,y,0,1.0_wp,irtrn)
+      call solout(nr,x0,x0,y,0,0.0_wp,irtrn)
       if (irtrn < 0) then
         h0 = h
         return
