@@ -48,7 +48,7 @@ module stiff3_solver
     subroutine output_sub(nr,xold,x,y,iha,qa,irtrn)
       import wp
       integer, intent(in) :: nr
-        !! Number of successful steps that have been taken
+        !! Number of successful steps that have been taken (zero at initial callback)
       real(wp), intent(in) :: xold
         !! Previous value of the independent variable
       real(wp), intent(in) :: x
