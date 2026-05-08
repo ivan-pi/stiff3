@@ -10,6 +10,7 @@ This repository provides a refactored version with a simplified procedural inter
 
 - Third-order Rosenbrock-type (semi-implicit Runge-Kutta) integrator suitable for stiff ODE systems
 - Adaptive stepsize control with error tolerance per component
+- Optional maximum absolute half-step size (`hmax`) to cap step growth
 - Optional runtime statistics output: rhs evaluations (`nfev`), Jacobian evaluations (`njev`), and LU decompositions (`nlu`)
 - Requires an exact user-supplied Jacobian
 - Depends on BLAS and LAPACK for linear algebra operations
@@ -77,7 +78,7 @@ program vanpol
 
   integer, parameter :: n = 2
   real(wp), parameter :: mu = 10.0_wp
-  real(wp) :: y(n), w(n), x0, x1, h0, eps
+  real(wp) :: y(n), w(n), x0, x1, h0, eps, hmax
   integer :: irtrn, stats(3)
 
 ! initial value
@@ -87,6 +88,8 @@ program vanpol
 ! tolerance
   eps = 1.0e-4_wp
   w = 1
+! optional maximum absolute half-step size (0 means default abs(x1-x0))
+  hmax = 0.0_wp
 ! time interval
   x0 = 0.0_wp
   x1 = 100.0_wp
@@ -94,7 +97,7 @@ program vanpol
   irtrn = 0
   call out(0,x0,x0,y,0,0.0_wp,irtrn)
 ! integrate system of ODEs
-  call stiff3(n,fun,jac,x0,x1,h0,eps,w,y,solout=out,stats=stats)
+  call stiff3(n,fun,jac,x0,x1,h0,eps,w,y,solout=out,stats=stats,hmax=hmax)
   print '(A,3(I0,1X))', 'nfev njev nlu: ', stats
 
 contains
@@ -147,6 +150,8 @@ The two tolerance parameters `eps` and `w` together control how accurately the s
 - **`w(i)`** — a positive weight for each solution component `i`. Setting all weights to `1.0` applies the same accuracy goal uniformly across all components. Increasing `w(i)` relative to the others tightens the tolerance on component `i`.
 
 A reasonable first choice is `eps = 1.0e-4` with all `w(i) = 1.0`, which requests roughly four significant digits from every component.
+
+You can also optionally pass `hmax` to limit the absolute half-step size used by the adaptive controller. If `hmax` is omitted or set to `0`, the default is `abs(x1-x0)`. If provided and positive, the solver uses `min(hmax, abs(x1-x0))`. Negative values are rejected.
 
 **How the tolerance is applied:** after each step the solver estimates the local error in each component and checks:
 

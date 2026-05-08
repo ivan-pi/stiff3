@@ -74,7 +74,7 @@ contains
 
   !> Semi-implicit Runge-Kutta integrator routine
   !
-  subroutine stiff3(n,fun,dfun,x0,x1,h0,eps,w,y,solout,stats)
+  subroutine stiff3(n,fun,dfun,x0,x1,h0,eps,w,y,solout,stats,hmax)
     integer, intent(in) :: n
       !! Number of equations to be integrated.
     procedure(rhs_sub) :: fun
@@ -97,6 +97,9 @@ contains
       !! User supplied subprogram for output.
     integer, intent(out), optional :: stats(3)
       !! Statistics array with `[nfev, njev, nlu]`.
+    real(wp), intent(in), optional :: hmax
+      !! Maximum absolute half-step size. If absent or zero, defaults to
+      !! `abs(x1 - x0)`.
 
     real(wp), dimension(n) :: yk1, yk2, ya, yold, yold1, f, fold
       !! Workspace for solution vector and right-hand side
@@ -107,14 +110,24 @@ contains
 
     integer :: icon, iha, i, j, nr, irtrn
     integer :: nfev, njev, nlu
-    real(wp) :: x, xold, h, e, es, q, qa
+    real(wp) :: x, xold, h, e, es, q, qa, hmax_used
 
   ! icon = 0 except for last step which ends exactly at x1
     icon = 0
 
     nr = 0
     x = x0
-    h = h0
+    if (present(hmax)) then
+      if (hmax < 0.0_wp) error stop 'stiff3: hmax must be a non-negative real value'
+      if (hmax == 0.0_wp) then
+        hmax_used = abs(x1 - x0)
+      else
+        hmax_used = min(hmax,abs(x1 - x0))
+      end if
+    else
+      hmax_used = abs(x1 - x0)
+    end if
+    h = min(h0,hmax_used)
     nfev = 0
     njev = 0
     nlu = 0
@@ -123,7 +136,7 @@ contains
 
     ! last step - or first step longer than interval
 
-      if (x + 2.0_wp*h >= x1) then
+      if ((x + 2.0_wp*h >= x1) .and. ((x1 - x)/2.0_wp <= hmax_used)) then
         h = (x1 - x)/2.0_wp
         icon = 1
       end if
@@ -133,6 +146,8 @@ contains
       if ((icon == 0) .and. (x + 4.0_wp*h > x1)) then
         h = (x1 - x)/4.0_wp
       end if
+
+      h = min(h,hmax_used)
 
     ! evaluate function and jacobian
 
@@ -221,9 +236,8 @@ contains
 
     !  compute new stepsize
 
-      qa = 1.0_wp/(qa+1.0e-10_wp)
-      if (qa > 3.0_wp) qa = 3.0_wp
-      h = qa*h
+      qa = min(1.0_wp/(qa + eps),3.0_wp)
+      h = min(qa*h,hmax_used)
 
     ! perform output if appropriate
 
