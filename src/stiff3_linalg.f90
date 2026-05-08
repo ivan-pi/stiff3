@@ -26,106 +26,74 @@ module stiff3_linalg
   integer, parameter :: dp = kind(1.0d0)
 
   interface lapack_getrf
-    pure subroutine sgetrf(m,n,a,lda,ipiv,info)
+    subroutine sgetrf(m,n,a,lda,ipiv,info)
       import :: sp
       real(sp), intent(inout) :: a(lda,*)
-      integer, intent(out) :: ipiv(*)
-      integer, intent(out) :: info
-      integer, intent(in) :: m
-      integer, intent(in) :: n
-      integer, intent(in) :: lda
+      integer, intent(out) :: ipiv(*), info
+      integer, intent(in) :: m, n, lda
     end subroutine sgetrf
-    pure subroutine dgetrf(m,n,a,lda,ipiv,info)
+    subroutine dgetrf(m,n,a,lda,ipiv,info)
       import :: dp
       real(dp), intent(inout) :: a(lda,*)
-      integer, intent(out) :: ipiv(*)
-      integer, intent(out) :: info
-      integer, intent(in) :: m
-      integer, intent(in) :: n
-      integer, intent(in) :: lda
+      integer, intent(out) :: ipiv(*), info
+      integer, intent(in) :: m, n, lda
     end subroutine dgetrf
   end interface lapack_getrf
 
   interface lapack_getrs
-    pure subroutine sgetrs(trans,n,nrhs,a,lda,ipiv,b,ldb,info)
+    subroutine sgetrs(trans,n,nrhs,a,lda,ipiv,b,ldb,info)
       import :: sp
       real(sp), intent(in) :: a(lda,*)
       integer, intent(in) :: ipiv(*)
       real(sp), intent(inout) :: b(ldb,*)
       character(len=1), intent(in) :: trans
       integer, intent(out) :: info
-      integer, intent(in) :: n
-      integer, intent(in) :: nrhs
-      integer, intent(in) :: lda
-      integer, intent(in) :: ldb
+      integer, intent(in) :: n, nrhs, lda, ldb
     end subroutine sgetrs
-    pure subroutine dgetrs(trans,n,nrhs,a,lda,ipiv,b,ldb,info)
+    subroutine dgetrs(trans,n,nrhs,a,lda,ipiv,b,ldb,info)
       import :: dp
       real(dp), intent(in) :: a(lda,*)
       integer, intent(in) :: ipiv(*)
       real(dp), intent(inout) :: b(ldb,*)
       character(len=1), intent(in) :: trans
       integer, intent(out) :: info
-      integer, intent(in) :: n
-      integer, intent(in) :: nrhs
-      integer, intent(in) :: lda
-      integer, intent(in) :: ldb
+      integer, intent(in) :: n, nrhs, lda, ldb
     end subroutine dgetrs
   end interface lapack_getrs
 
   interface lapack_gbtrf
-    pure subroutine sgbtrf(m,n,kl,ku,ab,ldab,ipiv,info)
+    subroutine sgbtrf(m,n,kl,ku,ab,ldab,ipiv,info)
       import :: sp
       real(sp), intent(inout) :: ab(ldab,*)
-      integer, intent(out) :: ipiv(*)
-      integer, intent(out) :: info
-      integer, intent(in) :: m
-      integer, intent(in) :: n
-      integer, intent(in) :: kl
-      integer, intent(in) :: ku
-      integer, intent(in) :: ldab
+      integer, intent(out) :: ipiv(*), info
+      integer, intent(in) :: m, n, kl, ku, ldab
     end subroutine sgbtrf
-    pure subroutine dgbtrf(m,n,kl,ku,ab,ldab,ipiv,info)
+    subroutine dgbtrf(m,n,kl,ku,ab,ldab,ipiv,info)
       import :: dp
       real(dp), intent(inout) :: ab(ldab,*)
-      integer, intent(out) :: ipiv(*)
-      integer, intent(out) :: info
-      integer, intent(in) :: m
-      integer, intent(in) :: n
-      integer, intent(in) :: kl
-      integer, intent(in) :: ku
-      integer, intent(in) :: ldab
+      integer, intent(out) :: ipiv(*), info
+      integer, intent(in) :: m, n, kl, ku, ldab
     end subroutine dgbtrf
   end interface lapack_gbtrf
 
   interface lapack_gbtrs
-    pure subroutine sgbtrs(trans,n,kl,ku,nrhs,ab,ldab,ipiv,b,ldb,info)
+    subroutine sgbtrs(trans,n,kl,ku,nrhs,ab,ldab,ipiv,b,ldb,info)
       import :: sp
       real(sp), intent(in) :: ab(ldab,*)
       integer, intent(in) :: ipiv(*)
       real(sp), intent(inout) :: b(ldb,*)
       character(len=1), intent(in) :: trans
       integer, intent(out) :: info
-      integer, intent(in) :: n
-      integer, intent(in) :: kl
-      integer, intent(in) :: ku
-      integer, intent(in) :: nrhs
-      integer, intent(in) :: ldab
-      integer, intent(in) :: ldb
+      integer, intent(in) :: n, kl, ku, nrhs, ldab, ldb
     end subroutine sgbtrs
-    pure subroutine dgbtrs(trans,n,kl,ku,nrhs,ab,ldab,ipiv,b,ldb,info)
+    subroutine dgbtrs(trans,n,kl,ku,nrhs,ab,ldab,ipiv,b,ldb,info)
       import :: dp
       real(dp), intent(in) :: ab(ldab,*)
       integer, intent(in) :: ipiv(*)
       real(dp), intent(inout) :: b(ldb,*)
       character(len=1), intent(in) :: trans
       integer, intent(out) :: info
-      integer, intent(in) :: n
-      integer, intent(in) :: kl
-      integer, intent(in) :: ku
-      integer, intent(in) :: nrhs
-      integer, intent(in) :: ldab
-      integer, intent(in) :: ldb
+      integer, intent(in) :: n, kl, ku, nrhs, ldab, ldb
     end subroutine dgbtrs
   end interface lapack_gbtrs
 
