@@ -73,6 +73,62 @@ module stiff3_linalg
     end subroutine dgetrs
   end interface lapack_getrs
 
+  interface lapack_gbtrf
+    pure subroutine sgbtrf(m,n,kl,ku,ab,ldab,ipiv,info)
+      import :: sp
+      real(sp), intent(inout) :: ab(ldab,*)
+      integer, intent(out) :: ipiv(*)
+      integer, intent(out) :: info
+      integer, intent(in) :: m
+      integer, intent(in) :: n
+      integer, intent(in) :: kl
+      integer, intent(in) :: ku
+      integer, intent(in) :: ldab
+    end subroutine sgbtrf
+    pure subroutine dgbtrf(m,n,kl,ku,ab,ldab,ipiv,info)
+      import :: dp
+      real(dp), intent(inout) :: ab(ldab,*)
+      integer, intent(out) :: ipiv(*)
+      integer, intent(out) :: info
+      integer, intent(in) :: m
+      integer, intent(in) :: n
+      integer, intent(in) :: kl
+      integer, intent(in) :: ku
+      integer, intent(in) :: ldab
+    end subroutine dgbtrf
+  end interface lapack_gbtrf
+
+  interface lapack_gbtrs
+    pure subroutine sgbtrs(trans,n,kl,ku,nrhs,ab,ldab,ipiv,b,ldb,info)
+      import :: sp
+      real(sp), intent(in) :: ab(ldab,*)
+      integer, intent(in) :: ipiv(*)
+      real(sp), intent(inout) :: b(ldb,*)
+      character(len=1), intent(in) :: trans
+      integer, intent(out) :: info
+      integer, intent(in) :: n
+      integer, intent(in) :: kl
+      integer, intent(in) :: ku
+      integer, intent(in) :: nrhs
+      integer, intent(in) :: ldab
+      integer, intent(in) :: ldb
+    end subroutine sgbtrs
+    pure subroutine dgbtrs(trans,n,kl,ku,nrhs,ab,ldab,ipiv,b,ldb,info)
+      import :: dp
+      real(dp), intent(in) :: ab(ldab,*)
+      integer, intent(in) :: ipiv(*)
+      real(dp), intent(inout) :: b(ldb,*)
+      character(len=1), intent(in) :: trans
+      integer, intent(out) :: info
+      integer, intent(in) :: n
+      integer, intent(in) :: kl
+      integer, intent(in) :: ku
+      integer, intent(in) :: nrhs
+      integer, intent(in) :: ldab
+      integer, intent(in) :: ldb
+    end subroutine dgbtrs
+  end interface lapack_gbtrs
+
 contains
 
   subroutine lu_sp(amat,ipiv,info)
