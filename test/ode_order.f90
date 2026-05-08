@@ -23,7 +23,7 @@ program ode_order
     x1 = hs(i)
     h0 = hs(i)/2.0_wp
 
-    call stiff3(n,fun,jac,out,1,x0,x1,h0,eps,w,y)
+    call stiff3(n,fun,jac,x0,x1,h0,eps,w,y,solout=out,iout=1)
     err(i) = max(abs(y(1)-cos(x1)),abs(y(2)+sin(x1)))
   end do
 
@@ -55,11 +55,14 @@ contains
     df(2,2) = 0.0_wp
   end subroutine
 
-  subroutine out(x,y,iha,qa)
+  subroutine out(nr,xold,x,y,iha,qa,irtrn)
+    integer, intent(in) :: nr
+    real(wp), intent(in) :: xold
     real(wp), intent(in) :: x
     real(wp), intent(in) :: y(:)
     integer, intent(in) :: iha
     real(wp), intent(in) :: qa
+    integer, intent(inout) :: irtrn
   end subroutine
 
 end program

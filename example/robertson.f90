@@ -49,7 +49,8 @@ program main
   real(wp) :: y(n), w(n)
   real(wp) :: h0, eps, x0, x1
 
-  integer, parameter :: nprint = 1
+  integer, parameter :: iout = 1
+  integer :: irtrn
 
 ! initial value
   y = [1.0_wp, 0.0_wp, 0.0_wp]
@@ -66,16 +67,20 @@ program main
   x0 = 0.0_wp
   x1 = 10.0_wp
 
-  call output(x0,y,0,0.0_wp)
-  call stiff3(n,fun,dfun,output,nprint,x0,x1,h0,eps,w,y)
+  irtrn = 0
+  call output(0,x0,x0,y,0,0.0_wp,irtrn)
+  call stiff3(n,fun,dfun,x0,x1,h0,eps,w,y,solout=output,iout=iout)
 
 contains
 
-  subroutine output(x,y,iha,qa)
+  subroutine output(nr,xold,x,y,iha,qa,irtrn)
+    integer, intent(in) :: nr
+    real(wp), intent(in) :: xold
     real(wp), intent(in) :: x
     real(wp), intent(in) :: y(:)
     integer, intent(in) :: iha
     real(wp), intent(in) :: qa
+    integer, intent(inout) :: irtrn
     real(wp) :: y2
     y2 = 1.e4_wp*y(2)
     print '(4(E19.12,2X),I4,2X,E19.12)', x, y(1), y2, y(3), iha, qa

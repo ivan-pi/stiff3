@@ -7,6 +7,7 @@ program lorenz
   integer, parameter :: n = 3, nout = 10
   real(wp), parameter :: sigma = 10.0_wp, rho = 28.0_wp, beta = 8.0_wp/3.0_wp
   real(wp) :: y(n), w(n), x0, x1, h0, eps
+  integer :: irtrn
 
 ! initial value
   y = [1.0_wp, 1.0_wp, 1.0_wp]
@@ -19,9 +20,10 @@ program lorenz
   x0 = 0.0_wp
   x1 = 40.0_wp
 ! output initial condition
-  call out(x0,y,0,0.0_wp)
+  irtrn = 0
+  call out(0,x0,x0,y,0,0.0_wp,irtrn)
 ! integrate system of ODEs
-  call stiff3(n,fun,jac,out,nout,x0,x1,h0,eps,w,y)
+  call stiff3(n,fun,jac,x0,x1,h0,eps,w,y,solout=out,iout=nout)
 
 contains
 
@@ -49,11 +51,14 @@ contains
     df(3,3) = -beta
   end subroutine
 
-  subroutine out(t,y,ih,qa)
+  subroutine out(nr,told,t,y,ih,qa,irtrn)
+    integer, intent(in) :: nr
+    real(wp), intent(in) :: told
     real(wp), intent(in) :: t
     real(wp), intent(in) :: y(:)
     integer, intent(in) :: ih
     real(wp), intent(in) :: qa
+    integer, intent(inout) :: irtrn
     write(*,'(4(E18.12,2X),I4,2X,G0)') t, y(1), y(2), y(3), ih, qa
   end subroutine
 
