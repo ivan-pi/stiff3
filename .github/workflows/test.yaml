@@ -60,7 +60,7 @@ jobs:
     - name: Set flang compiler
       if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
       run: |
-        FC_PATH="${FC:-$(command -v flang || command -v flang-new)}"
+        FC_PATH="$(command -v flang || command -v flang-new)"
         if [ -z "${FC_PATH}" ]; then
           echo "flang compiler not found on PATH" >&2
           exit 1
