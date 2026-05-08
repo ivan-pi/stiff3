@@ -56,7 +56,7 @@ module stiff3_solver
       real(wp), intent(in) :: y(:)
         !! Current value of the dependent variable vector
       integer, intent(in) :: iha
-        !! Number of bisections (unsuccesful integrations) in
+        !! Number of bisections (unsuccessful integrations) in
         !! the current step (set to zero for the initial callback)
       real(wp), intent(in) :: qa
         !! Step-length acceleration factor (set to zero for the initial callback)
@@ -126,6 +126,7 @@ contains
 
     if (present(solout) .and. iout_used > 0) then
       irtrn = 0
+      ! Initial grid-point callback: xold == x == x0 by construction.
       call solout(nr,x0,x0,y,0,0.0_wp,irtrn)
       if (irtrn < 0) then
         return
