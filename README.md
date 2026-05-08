@@ -10,7 +10,7 @@ This repository provides a refactored version with a simplified procedural inter
 
 - Third-order Rosenbrock-type (semi-implicit Runge-Kutta) integrator suitable for stiff ODE systems
 - Adaptive stepsize control with error tolerance per component
-- Requires a user-supplied Jacobian (exact or approximate)
+- Requires an exact user-supplied Jacobian
 - Depends on BLAS and LAPACK for linear algebra operations
 - Supports two build systems: [CMake](https://cmake.org/) and [Fortran Package Manager (fpm)](https://github.com/fortran-lang/fpm)
 
@@ -135,7 +135,19 @@ The specific three-stage semi-implicit Runge-Kutta method (SIRK3) used by `stiff
 
 The adaptive stepsize selection strategy is described in Villadsen & Michelsen (1978), Section 8.2.3, pages 314–317.
 
-The error tolerance values `eps` (scalar) and `w` (vector) are used to keep the local error estimate of component `i` smaller than `(1 + abs(y(i)))*eps/w(i)`.
+The error tolerance parameters `eps` and `w` control the local error accepted per integration step. After each step, the solver computes a scaled error norm:
+
+```
+e = max_i { w(i) * |error_i| / (1 + |y_i|) }
+```
+
+The step is accepted when `e <= eps`. For component `i` this is equivalent to requiring:
+
+```
+|error_i| <= (eps/w(i)) * (1 + |y_i|)
+```
+
+In the standard `atol`/`rtol` terminology, this corresponds to setting `atol_i = rtol_i = eps/w(i)` for each component. Increasing `w(i)` tightens the tolerance on component `i`; setting all `w = 1` applies the same tolerance `eps * (1 + |y_i|)` uniformly to all components.
 
 ## Contributing
 
