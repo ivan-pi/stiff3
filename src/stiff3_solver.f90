@@ -384,7 +384,7 @@ contains
       return
     end if
 
-    s = (xeval - xold)/h
+    s = max(0.0_wp,min(1.0_wp,(xeval - xold)/h))
     a1 = (1.0_wp + 2.0_wp*s)*(s - 1.0_wp)**2
     a2 = (3.0_wp - 2.0_wp*s)*s**2
     b1 = h*s*(s - 1.0_wp)**2
@@ -418,7 +418,7 @@ contains
       return
     end if
 
-    s = (xeval - xold)/h
+    s = max(0.0_wp,min(1.0_wp,(xeval - xold)/h))
     a1 = (1.0_wp + 2.0_wp*s)*(s - 1.0_wp)**2
     a2 = (3.0_wp - 2.0_wp*s)*s**2
     b1 = h*s*(s - 1.0_wp)**2
