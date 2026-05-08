@@ -5,9 +5,8 @@ program pendant_drop
   implicit none
 
   integer, parameter :: n = 3
-  real(wp) :: y(n), y0(n), w(n), x0, x1, h0, eps
+  real(wp) :: y(n), w(n), x0, x1, h0, eps
   real(wp) :: pL, drho, ds
-  integer :: irtrn
 
 ! dimensionless pressure offset and density difference
   pL = 3.3888_wp
@@ -21,7 +20,6 @@ program pendant_drop
   y(1) = ds
   y(2) = cos(y(1))*ds
   y(3) = sin(y(1))*ds
-  y0 = [0.0_wp, 0.0_wp, 0.0_wp]
 
 ! initial half-step length
   h0 = ds
@@ -30,8 +28,7 @@ program pendant_drop
   w = 1.0_wp
 
 ! output initial condition at s = 0
-  irtrn = 0
-  call out(0,0.0_wp,0.0_wp,y0,0,0.0_wp,irtrn)
+  write(*,'(4(E18.12,2X),I4,2X,G0)') 0.0_wp, 0.0_wp, 0.0_wp, 0.0_wp, 0, 0.0_wp
 ! integrate Young-Laplace system
   call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,solout=out)
 
