@@ -200,7 +200,7 @@ contains
     real(wp) :: x_current, xold, h, e, es, q, qa, hmax_used, hmin
     logical :: have_f
     integer, parameter :: max_phys_reject = 12
-      !! Maximum callback-driven rejections for one step (~4096x shrink from halving)
+      !! Maximum callback-driven rejections for one step (4096x shrink from halving)
     real(wp), parameter :: hmin_safety = sqrt(epsilon(1.0_wp))
       !! sqrt(epsilon) keeps a safety margin above machine epsilon for retry cutoff
 
