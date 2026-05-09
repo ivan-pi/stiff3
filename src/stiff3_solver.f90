@@ -61,7 +61,8 @@ module stiff3_solver
       real(wp), intent(in) :: qa
         !! Step-length acceleration factor
       integer, intent(inout) :: irtrn
-        !! If set < 0 by the callback, integration is interrupted
+        !! Callback return code: `0` continue, `-1` reject step and retry
+        !! with a smaller step, `< -1` interrupt integration.
     end subroutine
 
   end interface
@@ -194,10 +195,11 @@ contains
     integer, intent(out), optional :: stats(3)
     real(wp), intent(in), optional :: hmax
 
-    integer :: icon, iha, i, j, nr, irtrn
+    integer :: icon, iha, i, j, nr, irtrn, nphys
     integer :: nfev, njev, nlu
-    real(wp) :: x_current, xold, h, e, es, q, qa, hmax_used
+    real(wp) :: x_current, xold, h, e, es, q, qa, hmax_used, hmin
     logical :: have_f
+    integer, parameter :: max_phys_reject = 12
 
   ! icon = 0 except for last step which ends exactly at x1
     icon = 0
@@ -215,12 +217,15 @@ contains
       hmax_used = abs(xend - x_current)
     end if
     h = min(h0,hmax_used)
+    hmin = sqrt(epsilon(1.0_wp))*max(1.0_wp,abs(x),abs(xend))
     nfev = 0
     njev = 0
     nlu = 0
     have_f = .false.
 
     outer: do
+
+      nphys = 0
 
     ! last step - or first step longer than interval
 
@@ -238,6 +243,8 @@ contains
       h = min(h,hmax_used)
 
     ! evaluate function and jacobian
+
+      attempt: do
 
       if (.not. have_f) then
         ! On the first accepted step there is no saved endpoint rhs yet.
@@ -342,12 +349,35 @@ contains
       if (present(solout)) then
         irtrn = 0
         call solout(nr,xold,x_current,y,iha,qa,irtrn)
-        if (irtrn < 0) then
+        if (irtrn == -1) then
+          nr = nr - 1
+          x_current = xold
+          do i = 1, n
+            y(i) = yold(i)
+            f(i) = fold(i)
+            do j = 1, n
+              df(i,j) = dfold(i,j)
+            end do
+          end do
+          have_f = .true.
+          h = h/2.0_wp
+          icon = 0
+          nphys = nphys + 1
+          if (nphys > max_phys_reject .or. h <= hmin) then
+            h0 = h
+            if (present(stats)) stats = [nfev, njev, nlu]
+            return
+          end if
+          cycle attempt
+        else if (irtrn < -1) then
           h0 = h
           if (present(stats)) stats = [nfev, njev, nlu]
           return
         end if
       end if
+
+      exit attempt
+      end do attempt
 
     ! exit main loop
 

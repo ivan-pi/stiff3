@@ -150,6 +150,12 @@ contains
 end program
 ```
 
+Inside `solout`, `irtrn` controls integration:
+
+- `irtrn = 0` keeps the accepted step.
+- `irtrn = -1` rejects the accepted step and retries it with a smaller step size (up to an internal safety limit).
+- `irtrn < -1` interrupts integration immediately.
+
 ## Method
 
 `stiff3` implements a **Rosenbrock-type** (also known as semi-implicit Runge-Kutta) method. Rosenbrock methods linearize the implicit equations of a standard implicit Runge-Kutta scheme, requiring only a single LU factorization of the Jacobian per step. This makes them efficient for stiff problems while avoiding the nonlinear iterations of fully implicit methods.
