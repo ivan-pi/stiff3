@@ -16,7 +16,7 @@ module stiff3_solver
   implicit none
   private
 
-  public :: stiff3, stiff3_auto, stiff3_work, stiff3_wp
+  public :: stiff3, stiff3_auto, stiff3_work, stiff3_wp, stiff3_interp
   public :: rhs_sub, jacobian_sub, output_sub
 
   !> Kind parameter for working precision of stiff3 reals
@@ -71,6 +71,11 @@ module stiff3_solver
     module procedure stiff3_work
   end interface
 
+  interface stiff3_interp
+    module procedure stiff3_interp_component
+    module procedure stiff3_interp_vector
+  end interface
+
 
 contains
 
@@ -114,8 +119,9 @@ contains
       !! Workspace for the pivot array
 
     call stiff3_core(n,fun,x,y,xend,jac,h0,eps,w, &
-                     yk1,yk2,ya,yold,yold1,f,fold,df,dfold,ip, &
-                     solout,stats,hmax)
+                     yk1=yk1,yk2=yk2,ya=ya,yold=yold,yold1=yold1, &
+                     f=f,fold=fold,df=df,dfold=dfold,ip=ip, &
+                     solout=solout,stats=stats,hmax=hmax)
 
   end subroutine
 
@@ -191,6 +197,7 @@ contains
     integer :: icon, iha, i, j, nr, irtrn
     integer :: nfev, njev, nlu
     real(wp) :: x_current, xold, h, e, es, q, qa, hmax_used
+    logical :: have_f
 
   ! icon = 0 except for last step which ends exactly at x1
     icon = 0
@@ -211,6 +218,7 @@ contains
     nfev = 0
     njev = 0
     nlu = 0
+    have_f = .false.
 
     outer: do
 
@@ -231,8 +239,11 @@ contains
 
     ! evaluate function and jacobian
 
-      call fun(n,y,f)
-      nfev = nfev + 1
+      if (.not. have_f) then
+        ! On the first accepted step there is no saved endpoint rhs yet.
+        call fun(n,y,f)
+        nfev = nfev + 1
+      end if
       call jac(n,y,df)
       njev = njev + 1
 
@@ -314,6 +325,12 @@ contains
       xold = x_current
       x_current = x_current + 2*h
 
+    ! evaluate rhs at the accepted-step end so it is ready for the next step
+    ! and available in the explicit-workspace path through rwork(5*n+1:6*n)
+      call fun(n,y,f)
+      nfev = nfev + 1
+      have_f = .true.
+
     !  compute new stepsize
 
       qa = min(1.0_wp/(qa + eps),3.0_wp)
@@ -342,6 +359,83 @@ contains
 
     end do outer
 
+  end subroutine
+
+
+  !> Interpolate one component of the accepted solution over `[xold, x]`.
+  !!
+  !! This routine is intended for use from within a `solout` callback after
+  !! calling `stiff3_work`, which provides the required accepted-step data in
+  !! `rwork`.
+  subroutine stiff3_interp_component(xold,x,y,rwork,xeval,idx,yeval)
+    real(wp), intent(in) :: xold, x
+    real(wp), intent(in) :: y(:), rwork(:)
+    real(wp), intent(in) :: xeval
+    integer, intent(in) :: idx
+    real(wp), intent(out) :: yeval
+
+    integer :: n
+    real(wp) :: h, s
+    real(wp) :: a1, a2, b1, b2
+
+    n = size(y)
+
+    if (idx < 1 .or. idx > n) error stop 'stiff3_interp_component: idx out of range'
+
+    h = x - xold
+    if (h == 0.0_wp) then
+      yeval = y(idx)
+      return
+    end if
+
+    s = max(0.0_wp,min(1.0_wp,(xeval - xold)/h))
+    a1 = (1.0_wp + 2.0_wp*s)*(s - 1.0_wp)**2
+    a2 = (3.0_wp - 2.0_wp*s)*s**2
+    b1 = h*s*(s - 1.0_wp)**2
+    b2 = h*(s - 1.0_wp)*s**2
+
+    ! The rwork slices below must match the named associations in stiff3_work:
+    ! yold -> rwork(3*n+1:4*n), fold -> rwork(6*n+1:7*n),
+    ! f    -> rwork(5*n+1:6*n), holding the accepted-step end derivative.
+    yeval = a1*rwork(3*n + idx) + a2*y(idx) + &
+            b1*rwork(6*n + idx) + b2*rwork(5*n + idx)
+  end subroutine
+
+
+  !> Interpolate the accepted solution vector over `[xold, x]`.
+  !!
+  !! This routine is intended for use from within a `solout` callback after
+  !! calling `stiff3_work`, which provides the required accepted-step data in
+  !! `rwork`.
+  subroutine stiff3_interp_vector(xold,x,y,rwork,xeval,yeval)
+    real(wp), intent(in) :: xold, x
+    real(wp), intent(in) :: y(:), rwork(:)
+    real(wp), intent(in) :: xeval
+    real(wp), intent(out) :: yeval(:)
+
+    integer :: n
+    real(wp) :: h, s
+    real(wp) :: a1, a2, b1, b2
+
+    n = size(y)
+
+    h = x - xold
+    if (h == 0.0_wp) then
+      yeval = y
+      return
+    end if
+
+    s = max(0.0_wp,min(1.0_wp,(xeval - xold)/h))
+    a1 = (1.0_wp + 2.0_wp*s)*(s - 1.0_wp)**2
+    a2 = (3.0_wp - 2.0_wp*s)*s**2
+    b1 = h*s*(s - 1.0_wp)**2
+    b2 = h*(s - 1.0_wp)*s**2
+
+    ! The rwork slices below must match the named associations in stiff3_work:
+    ! yold -> rwork(3*n+1:4*n), fold -> rwork(6*n+1:7*n),
+    ! f    -> rwork(5*n+1:6*n), holding the accepted-step end derivative.
+    yeval = a1*rwork(3*n+1:4*n) + a2*y + &
+            b1*rwork(6*n+1:7*n) + b2*rwork(5*n+1:6*n)
   end subroutine
 
 
