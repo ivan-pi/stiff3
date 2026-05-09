@@ -200,9 +200,9 @@ contains
     real(wp) :: x_current, xold, h, e, es, q, qa, hmax_used, hmin
     logical :: have_f
     integer, parameter :: max_phys_reject = 12
-      !! Maximum callback-driven rejections for one step (keeps retry cost bounded)
+      !! Maximum callback-driven rejections for one step (~4e3 shrink from halving)
     real(wp), parameter :: hmin_safety = sqrt(epsilon(1.0_wp))
-      !! Minimum-step scale factor for retry cutoff (machine-precision guard)
+      !! sqrt(epsilon) guards against cancellation before full machine epsilon
 
   ! icon = 0 except for last step which ends exactly at x1
     icon = 0
@@ -228,6 +228,7 @@ contains
     outer: do
 
       nphys = 0
+      ! max(1,|x_current|,|xend|) keeps a finite lower bound near the origin.
       hmin = hmin_safety*max(1.0_wp,abs(x_current),abs(xend))
 
     ! last step - or first step longer than interval
