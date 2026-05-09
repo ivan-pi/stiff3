@@ -200,6 +200,7 @@ contains
     real(wp) :: x_current, xold, h, e, es, q, qa, hmax_used, hmin
     logical :: have_f
     integer, parameter :: max_phys_reject = 12
+      !! Maximum number of callback-driven rejections for one step attempt
 
   ! icon = 0 except for last step which ends exactly at x1
     icon = 0
@@ -217,7 +218,6 @@ contains
       hmax_used = abs(xend - x_current)
     end if
     h = min(h0,hmax_used)
-    hmin = sqrt(epsilon(1.0_wp))*max(1.0_wp,abs(x),abs(xend))
     nfev = 0
     njev = 0
     nlu = 0
@@ -226,6 +226,7 @@ contains
     outer: do
 
       nphys = 0
+      hmin = sqrt(epsilon(1.0_wp))*max(1.0_wp,abs(x_current),abs(xend))
 
     ! last step - or first step longer than interval
 

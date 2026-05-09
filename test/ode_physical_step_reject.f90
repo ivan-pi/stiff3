@@ -7,7 +7,8 @@ program ode_physical_step_reject
   integer, parameter :: n = 1
   real(wp), parameter :: y0 = 1.0_wp
   real(wp), parameter :: tol = 1.0e-7_wp
-  real(wp) :: y_ref(n), y_retry(n), y_fail(n), w(n), x0, x1, h0, eps
+  real(wp), parameter :: eps = 1.0e-7_wp
+  real(wp) :: y_ref(n), y_retry(n), y_fail(n), w(n), x0, x1, h0
   integer :: stats_ref(3), stats_retry(3), stats_fail(3)
   integer :: reject_once_count, reject_fail_count
   logical :: rejected_once
@@ -15,8 +16,6 @@ program ode_physical_step_reject
   w = 1.0_wp
   x0 = 0.0_wp
   x1 = 0.5_wp
-  eps = 1.0e-7_wp
-
   y_ref = [y0]
   h0 = 0.1_wp
   call stiff3(n,fun,x0,y_ref,x1,jac,h0,eps,w,stats=stats_ref)
