@@ -74,7 +74,7 @@ stiff3.git = "https://github.com/ivan-pi/stiff3"
 
 ### Running the examples
 
-Five examples called `robertson`, `vanpol`, `lorenz`, `predator_prey`, and `pendant_drop` are provided. They can be run with the command
+Six examples called `robertson`, `vanpol`, `lorenz`, `predator_prey`, `pendant_drop`, and `three_equation_system` are provided. They can be run with the command
 
 ```sh
 fpm run --example <name>
