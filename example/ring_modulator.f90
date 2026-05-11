@@ -9,7 +9,7 @@ program ring_modulator
   integer, parameter :: ncases = 33
   real(wp), parameter :: x0 = 0.0_wp
   real(wp), parameter :: x1 = 1.0e-3_wp
-  real(wp), parameter :: initial_step_scale = 1.0e-1_wp
+  real(wp), parameter :: initial_step_scale = 1.0e-2_wp
   real(wp), parameter :: verification_tol = 1.0e-6_wp
   real(wp), parameter :: y0(n) = 0.0_wp
   real(wp), parameter :: yref(nphys) = [ &
