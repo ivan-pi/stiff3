@@ -74,7 +74,7 @@ stiff3.git = "https://github.com/ivan-pi/stiff3"
 
 ### Running the examples
 
-Eight examples called `robertson`, `vanpol`, `lorenz`, `predator_prey`, `pendant_drop`, `three_equation_system`, `oregonator`, and `e5_chemical` are provided. They can be run with the command
+Nine examples called `robertson`, `vanpol`, `lorenz`, `predator_prey`, `pendant_drop`, `three_equation_system`, `oregonator`, `e5_chemical`, and `hires` are provided. They can be run with the command
 
 ```sh
 fpm run --example <name>
@@ -85,6 +85,8 @@ With CMake, the compiled executables are placed in the `build/example/` director
 The `oregonator` example verifies a published reference solution at `t = 360` and writes `oregonator_work_precision.csv`, an `oregonator_work_precision.svg` plot of CPU time vs error tolerance `eps` (logarithmic y-axis), and `oregonator_solution.dat` (columns `t y1 y2 y3` for gnuplot) in the current working directory.
 
 The `e5_chemical` example verifies the Datta/Bari E5 reference solution at `t = 1.0e13` and writes `e5_chemical_work_precision.csv` together with an `e5_chemical_work_precision.svg` plot of CPU time vs error tolerance `eps` (logarithmic y-axis).
+
+The `hires` example verifies the Bari HIRES reference solution at `t = 321.8122` and writes `hires_work_precision.dat` (columns: `eps cpu_time_seconds max_relative_error nfev njev nlu nsol nacc nrej`) for plotting CPU time vs error tolerance `eps` with gnuplot.
 
 ## Usage
 
