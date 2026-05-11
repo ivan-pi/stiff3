@@ -8,6 +8,7 @@ program ode_linear_decay
   real(wp), parameter :: lambda = 2.0_wp
   real(wp), parameter :: tol = 1.0e-8_wp
   real(wp) :: y(n), w(n), x0, x1, h0, eps, exact, err
+  integer :: idid
 
   y = [1.0_wp]
   w = 1.0_wp
@@ -16,7 +17,7 @@ program ode_linear_decay
   h0 = 0.01_wp
   eps = 1.0e-10_wp
 
-  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w)
+  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,idid)
 
   exact = exp(-lambda*x1)
   err = abs(y(1) - exact)

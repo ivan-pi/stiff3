@@ -9,6 +9,7 @@ program ode_robertson_invariants
   real(wp), parameter :: min_tol = -1.0e-14_wp
   real(wp) :: y(n), w(n), x0, x1, h0, eps
   real(wp) :: mass
+  integer :: idid
 
   y = [1.0_wp, 0.0_wp, 0.0_wp]
   w = [1.0_wp, 1.0e-4_wp, 1.0_wp]
@@ -17,7 +18,7 @@ program ode_robertson_invariants
   h0 = 1.0e-4_wp
   eps = 1.0e-7_wp
 
-  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w)
+  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,idid)
 
   mass = sum(y)
   if (abs(mass - 1.0_wp) > sum_tol) then

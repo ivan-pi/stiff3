@@ -191,7 +191,7 @@ These routines evaluate a cubic Hermite interpolant over the current accepted st
 
 You can also optionally pass `hmax` to limit the absolute half-step size used by the adaptive controller. If `hmax` is omitted or set to `0`, the default is `abs(x1-x0)`. If provided and positive, the solver uses `min(hmax, abs(x1-x0))`. Negative values are rejected.
 
-The optional integer return flag `idid` reports solver status:
+The integer return flag `idid` reports solver status:
 
 - `0`: successful completion at `x1`
 - `-1`: LU factorization failed (singular Jacobian matrix)

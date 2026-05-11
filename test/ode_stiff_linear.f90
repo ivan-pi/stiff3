@@ -8,6 +8,7 @@ program ode_stiff_linear
   real(wp), parameter :: tol = 2.0e-7_wp
   real(wp) :: y(n), w(n), x0, x1, h0, eps
   real(wp) :: exact1, exact2, err
+  integer :: idid
 
   y = [2.0_wp, 1.0_wp]
   w = 1.0_wp
@@ -16,7 +17,7 @@ program ode_stiff_linear
   h0 = 1.0e-3_wp
   eps = 1.0e-10_wp
 
-  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w)
+  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,idid)
 
   exact2 = exp(x1)
   exact1 = (1000.0_wp/1001.0_wp)*exact2 + (1002.0_wp/1001.0_wp)*exp(-1000.0_wp*x1)

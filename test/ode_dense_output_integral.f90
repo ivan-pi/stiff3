@@ -15,7 +15,7 @@ program ode_dense_output_integral
   real(wp) :: y(n), w(n), h0, eps
   real(wp) :: rwork(n*(7 + 2*n))
   integer :: iwork(n)
-  integer :: nsteps_checked
+  integer :: idid, nsteps_checked
   real(wp) :: adaptive_integral, interp_integral, exact_integral
   real(wp) :: xprev, yprev1, xfixed_prev, yfixed_prev, xfixed_next
 
@@ -33,7 +33,7 @@ program ode_dense_output_integral
   yfixed_prev = y(1)
   xfixed_next = x0 + dx_fixed
 
-  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,rwork,iwork,solout=accumulate_integrals,hmax=hmax)
+  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,rwork,iwork,idid,solout=accumulate_integrals,hmax=hmax)
 
   if (nsteps_checked < 2) then
     print '(A,I0)', 'expected integral test to exercise multiple steps, got ', nsteps_checked
