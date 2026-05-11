@@ -16,7 +16,7 @@ program three_equation_system
   h0 = 2.9e-4_wp
 ! tolerance
   eps = 1.0e-4_wp
-  w = 1
+  w = 1.0_wp
 ! time interval
   x0 = 0.0_wp
   x1 = 50.0_wp
