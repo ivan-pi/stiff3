@@ -11,6 +11,15 @@
 !>
 module stiff3_solver
 
+  !> `idid` return flag summary
+  !>
+  !> | `idid` | Meaning |
+  !> |---:|:---|
+  !> | `0` | Integration completed successfully at `xend`. |
+  !> | `-1` | LU factorization failed (singular Jacobian matrix). |
+  !> | `-2` | Integration interrupted by user callback (`irtrn < 0`). |
+  !> | `-3` | Step-size underflow during bisection (`abs(h) <= spacing(x_current)`). |
+  !>
   use stiff3_linalg, only: lu, back
 
   implicit none
@@ -84,7 +93,7 @@ contains
 
   !> Semi-implicit Runge-Kutta integrator routine
   !
-  subroutine stiff3_auto(n,fun,x,y,xend,jac,h0,eps,w,solout,stats,hmax)
+  subroutine stiff3_auto(n,fun,x,y,xend,jac,h0,eps,w,solout,stats,hmax,idid)
     integer, intent(in) :: n
       !! Number of equations to be integrated.
     procedure(rhs_sub) :: fun
@@ -110,6 +119,8 @@ contains
     real(wp), intent(in), optional :: hmax
       !! Maximum absolute half-step size. If absent or zero, defaults to
       !! `abs(xend - x)`.
+    integer, intent(out), optional :: idid
+      !! Return flag for success/error conditions.
 
     real(wp), dimension(n) :: yk1, yk2, ya, yold, yold1, f, fold
       !! Workspace for solution vector and right-hand side
@@ -121,14 +132,14 @@ contains
     call stiff3_core(n,fun,x,y,xend,jac,h0,eps,w, &
                      yk1=yk1,yk2=yk2,ya=ya,yold=yold,yold1=yold1, &
                      f=f,fold=fold,df=df,dfold=dfold,ip=ip, &
-                     solout=solout,stats=stats,hmax=hmax)
+                     solout=solout,stats=stats,hmax=hmax,idid=idid)
 
   end subroutine
 
 
   !> Semi-implicit Runge-Kutta integrator routine with explicit workspace
   !
-  subroutine stiff3_work(n,fun,x,y,xend,jac,h0,eps,w,rwork,iwork,solout,stats,hmax)
+  subroutine stiff3_work(n,fun,x,y,xend,jac,h0,eps,w,rwork,iwork,solout,stats,hmax,idid)
     integer, intent(in) :: n
       !! Number of equations to be integrated.
     procedure(rhs_sub) :: fun
@@ -158,6 +169,8 @@ contains
     real(wp), intent(in), optional :: hmax
       !! Maximum absolute half-step size. If absent or zero, defaults to
       !! `abs(xend - x)`.
+    integer, intent(out), optional :: idid
+      !! Return flag for success/error conditions.
 
     call stiff3_core(n,fun,x,y,xend,jac,h0,eps,w, &
                      yk1   = rwork(1), &
@@ -167,10 +180,10 @@ contains
                      yold1 = rwork(4*n+1), &
                      f     = rwork(5*n+1), &
                      fold  = rwork(6*n+1), &
-                     df    = rwork(7*n+1), &
-                     dfold = rwork(7*n+n*n+1), &
-                     ip    = iwork(1), &
-                     solout=solout,stats=stats,hmax=hmax)
+                      df    = rwork(7*n+1), &
+                      dfold = rwork(7*n+n*n+1), &
+                      ip    = iwork(1), &
+                      solout=solout,stats=stats,hmax=hmax,idid=idid)
 
   end subroutine
 
@@ -179,7 +192,7 @@ contains
   !
   subroutine stiff3_core(n,fun,x,y,xend,jac,h0,eps,w, &
                          yk1,yk2,ya,yold,yold1,f,fold,df,dfold,ip, &
-                         solout,stats,hmax)
+                         solout,stats,hmax,idid)
     integer, intent(in) :: n
     procedure(rhs_sub) :: fun
     procedure(jacobian_sub) :: jac
@@ -193,8 +206,9 @@ contains
     procedure(output_sub), optional :: solout
     integer, intent(out), optional :: stats(3)
     real(wp), intent(in), optional :: hmax
+    integer, intent(out), optional :: idid
 
-    integer :: icon, iha, i, j, nr, irtrn
+    integer :: icon, iha, i, j, nr, irtrn, lu_info
     integer :: nfev, njev, nlu
     real(wp) :: x_current, xold, h, e, es, q, qa, hmax_used
     logical :: have_f
@@ -219,6 +233,7 @@ contains
     njev = 0
     nlu = 0
     have_f = .false.
+    if (present(idid)) idid = 0
 
     outer: do
 
@@ -259,7 +274,13 @@ contains
 
     ! perform full integration step
 
-      call sirk3(n,fun,ip,f,y,yk1,yk2,df,2*h,nfev,nlu)
+      call sirk3(n,fun,ip,f,y,yk1,yk2,df,2*h,nfev,nlu,lu_info)
+      if (lu_info /= 0) then
+        h0 = h
+        if (present(stats)) stats = [nfev, njev, nlu]
+        if (present(idid)) idid = -1
+        return
+      end if
 
       do i = 1, n
         ya(i) = y(i)
@@ -277,7 +298,13 @@ contains
       inner: do
         iha = iha + 1
 
-        call sirk3(n,fun,ip,f,y,yk1,yk2,df,h,nfev,nlu)
+        call sirk3(n,fun,ip,f,y,yk1,yk2,df,h,nfev,nlu,lu_info)
+        if (lu_info /= 0) then
+          h0 = h
+          if (present(stats)) stats = [nfev, njev, nlu]
+          if (present(idid)) idid = -1
+          return
+        end if
         call fun(n,y,f)
         nfev = nfev + 1
         call jac(n,y,df)
@@ -285,7 +312,13 @@ contains
 
         yold1 = y
 
-        call sirk3(n,fun,ip,f,y,yk1,yk2,df,h,nfev,nlu)
+        call sirk3(n,fun,ip,f,y,yk1,yk2,df,h,nfev,nlu,lu_info)
+        if (lu_info /= 0) then
+          h0 = h
+          if (present(stats)) stats = [nfev, njev, nlu]
+          if (present(idid)) idid = -1
+          return
+        end if
 
       ! half step integration finished
       ! compute deviation and compare with tolerance
@@ -314,6 +347,13 @@ contains
 
         h = h/2.0_wp
         icon = 0
+        if (abs(h) <= spacing(x_current)) then
+          print *, "Error: Step-size underflow. The step-size is smaller than the number spacing at x."
+          h0 = h
+          if (present(stats)) stats = [nfev, njev, nlu]
+          if (present(idid)) idid = -3
+          return
+        end if
 
       end do inner
 
@@ -345,6 +385,7 @@ contains
         if (irtrn < 0) then
           h0 = h
           if (present(stats)) stats = [nfev, njev, nlu]
+          if (present(idid)) idid = -2
           return
         end if
       end if
@@ -354,6 +395,7 @@ contains
       if (icon == 1) then
         h0 = h
         if (present(stats)) stats = [nfev, njev, nlu]
+        if (present(idid)) idid = 0
         return
       end if
 
@@ -441,7 +483,7 @@ contains
 
   !> Single-step semi-implicit integration
   !
-  subroutine sirk3(n,fun,ipiv,f,y,yk1,yk2,df,h,nfev,nlu)
+  subroutine sirk3(n,fun,ipiv,f,y,yk1,yk2,df,h,nfev,nlu,lu_info)
     integer, intent(in) :: n
       !! Size of the system of ODEs
     procedure(rhs_sub) :: fun
@@ -464,6 +506,8 @@ contains
       !! Number of right-hand side evaluations
     integer, intent(inout) :: nlu
       !! Number of LU decompositions
+    integer, intent(out) :: lu_info
+      !! LU factorization info from LAPACK GETRF
 
     integer :: i
 
@@ -484,8 +528,9 @@ contains
     !
     ! perform triangular decomposition and evaluate k1
     !
-    call lu(df,ipiv)
+    call lu(df,ipiv,lu_info)
     nlu = nlu + 1
+    if (lu_info /= 0) return
     call back(df,f,ipiv)
 
     do i = 1, n
