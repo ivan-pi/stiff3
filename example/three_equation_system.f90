@@ -13,7 +13,7 @@ program three_equation_system
 ! initial value
   y = [1.0_wp, 1.0_wp, 0.0_wp]
 ! initial step size
-  h0 = 2.9_wp*10e-4_wp
+  h0 = 2.9e-4_wp
 ! tolerance
   eps = 1.0e-4_wp
   w = 1
