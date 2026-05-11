@@ -45,7 +45,7 @@ program e5_chemical
   end do
 
   call write_csv(csv_file, eps_values, errors, times, stats)
-  call write_svg(svg_file, eps_values, errors, times)
+  call write_svg(svg_file, eps_values, times)
 
   print '(A)', 'work-precision data:'
   print '(A)', '  eps         error      time(s)      nfev   njev   nlu   nsol'
@@ -101,9 +101,9 @@ contains
     close(unit)
   end subroutine
 
-  subroutine write_svg(filename, eps, err, elapsed)
+  subroutine write_svg(filename, eps, elapsed)
     character(len=*), intent(in) :: filename
-    real(wp), intent(in) :: eps(:), err(:), elapsed(:)
+    real(wp), intent(in) :: eps(:), elapsed(:)
 
     integer, parameter :: width = 800
     integer, parameter :: height = 600
@@ -114,17 +114,16 @@ contains
 
     character(len=32) :: label
     integer :: i, ios, unit
-    real(wp) :: log_time(size(elapsed)), log_err(size(err))
+    real(wp) :: log_time(size(elapsed))
     real(wp) :: xmin, xmax, ymin, ymax, xpad, ypad
     real(wp) :: x1p, x2p, y1p, y2p, xtick, ytick, tick_value
 
     log_time = log10(max(elapsed, tiny(1.0_wp)))
-    log_err = log10(max(err, tiny(1.0_wp)))
 
-    xmin = minval(log_time)
-    xmax = maxval(log_time)
-    ymin = minval(log_err)
-    ymax = maxval(log_err)
+    xmin = minval(eps)
+    xmax = maxval(eps)
+    ymin = minval(log_time)
+    ymax = maxval(log_time)
     xpad = 0.05_wp*max(xmax - xmin, 1.0_wp)
     ypad = 0.08_wp*max(ymax - ymin, 1.0_wp)
     xmin = xmin - xpad
@@ -148,7 +147,7 @@ contains
 
     do i = 0, 4
       xtick = left + real(i,wp)*(real(width,wp) - left - right)/4.0_wp
-      tick_value = 10.0_wp**(xmin + real(i,wp)*(xmax - xmin)/4.0_wp)
+      tick_value = xmin + real(i,wp)*(xmax - xmin)/4.0_wp
       write(label,'(ES10.2)') tick_value
       write(unit,'(A,F0.3,A,F0.3,A)') '<line x1="', xtick, '" y1="520" x2="', xtick, &
         '" y2="526" stroke="#666"/>'
@@ -168,24 +167,24 @@ contains
 
     write(unit,'(A)') &
       '<text x="435" y="585" font-family="sans-serif" font-size="16" ' // &
-      'text-anchor="middle">elapsed cpu time (s)</text>'
+      'text-anchor="middle">error tolerance (eps)</text>'
     write(unit,'(A)') &
       '<text x="24" y="285" font-family="sans-serif" font-size="16" ' // &
       'text-anchor="middle" transform="rotate(-90 24 285)">' // &
-      'max relative error</text>'
+      'CPU time (s) (log scale)</text>'
 
     do i = 1, size(elapsed) - 1
-      x1p = xcoord(log_time(i), xmin, xmax, width, left, right)
-      y1p = ycoord(log_err(i), ymin, ymax, height, top, bottom)
-      x2p = xcoord(log_time(i + 1), xmin, xmax, width, left, right)
-      y2p = ycoord(log_err(i + 1), ymin, ymax, height, top, bottom)
+      x1p = xcoord(eps(i), xmin, xmax, width, left, right)
+      y1p = ycoord(log_time(i), ymin, ymax, height, top, bottom)
+      x2p = xcoord(eps(i + 1), xmin, xmax, width, left, right)
+      y2p = ycoord(log_time(i + 1), ymin, ymax, height, top, bottom)
       write(unit,'(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A)') '<line x1="', x1p, '" y1="', y1p, &
         '" x2="', x2p, '" y2="', y2p, '" stroke="#1f77b4" stroke-width="2"/>'
     end do
 
     do i = 1, size(elapsed)
-      x1p = xcoord(log_time(i), xmin, xmax, width, left, right)
-      y1p = ycoord(log_err(i), ymin, ymax, height, top, bottom)
+      x1p = xcoord(eps(i), xmin, xmax, width, left, right)
+      y1p = ycoord(log_time(i), ymin, ymax, height, top, bottom)
       write(label,'(ES9.1)') eps(i)
       write(unit,'(A,F0.3,A,F0.3,A)') '<circle cx="', x1p, '" cy="', y1p, '" r="4.5" fill="#d62728"/>'
       write(unit,'(A,F0.3,A,F0.3,A)') '<text x="', x1p + 8.0_wp, '" y="', y1p - 8.0_wp, &
