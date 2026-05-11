@@ -171,7 +171,7 @@ contains
     write(unit,'(A)') &
       '<text x="24" y="285" font-family="sans-serif" font-size="16" ' // &
       'text-anchor="middle" transform="rotate(-90 24 285)">' // &
-      'elapsed cpu time (s, log scale)</text>'
+      'CPU time (s) (log scale)</text>'
 
     do i = 1, size(elapsed) - 1
       x1p = xcoord(eps(i), xmin, xmax, width, left, right)
