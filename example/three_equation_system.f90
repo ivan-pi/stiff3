@@ -8,7 +8,7 @@ program three_equation_system
   real(wp), parameter :: k2 = 1000.0_wp
   real(wp), parameter :: k3 = 2500.0_wp
   real(wp) :: y(n), w(n), x0, x1, h0, eps
-  integer :: irtrn, nsteps
+  integer :: stats(6)
 
 ! initial value
   y = [1.0_wp, 1.0_wp, 0.0_wp]
@@ -21,12 +21,9 @@ program three_equation_system
   x0 = 0.0_wp
   x1 = 50.0_wp
 
-  nsteps = 0
-  irtrn = 0
-  call out(0,x0,x0,y,0,0.0_wp,irtrn)
-  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,solout=out)
-
-  print '(A,I0)', 'Accepted steps required: ', nsteps
+  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,stats=stats)
+  print '(A,3(I0,1X))', 'nfev njev nlu: ', stats(1), stats(2), stats(3)
+  print '(A,3(I0,1X))', 'accepted rejected nsol: ', stats(4), stats(5), stats(6)
 
 contains
 
@@ -56,18 +53,6 @@ contains
     df(3,1) = -k1 - k2*y(3)
     df(3,2) = -k3*y(3)
     df(3,3) = -k2*y(1) - k3*y(2)
-  end subroutine
-
-  subroutine out(nr,told,t,y,ih,qa,irtrn)
-    integer, intent(in) :: nr
-    real(wp), intent(in) :: told
-    real(wp), intent(in) :: t
-    real(wp), intent(in) :: y(:)
-    integer, intent(in) :: ih
-    real(wp), intent(in) :: qa
-    integer, intent(inout) :: irtrn
-
-    nsteps = nr
   end subroutine
 
 end program

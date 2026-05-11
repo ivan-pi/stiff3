@@ -105,8 +105,8 @@ contains
       !! dependent variables at `xend`.
     procedure(output_sub), optional :: solout
       !! User supplied subprogram for output.
-    integer, intent(out), optional :: stats(3)
-      !! Statistics array with `[nfev, njev, nlu]`.
+    integer, intent(out), optional :: stats(6)
+      !! Statistics array with `[nfev, njev, nlu, nacc, nrej, nsol]`.
     real(wp), intent(in), optional :: hmax
       !! Maximum absolute half-step size. If absent or zero, defaults to
       !! `abs(xend - x)`.
@@ -153,8 +153,8 @@ contains
       !! Integer workspace of size `n`.
     procedure(output_sub), optional :: solout
       !! User supplied subprogram for output.
-    integer, intent(out), optional :: stats(3)
-      !! Statistics array with `[nfev, njev, nlu]`.
+    integer, intent(out), optional :: stats(6)
+      !! Statistics array with `[nfev, njev, nlu, nacc, nrej, nsol]`.
     real(wp), intent(in), optional :: hmax
       !! Maximum absolute half-step size. If absent or zero, defaults to
       !! `abs(xend - x)`.
@@ -191,11 +191,11 @@ contains
     real(wp), intent(inout) :: df(n,n), dfold(n,n)
     integer, intent(inout) :: ip(n)
     procedure(output_sub), optional :: solout
-    integer, intent(out), optional :: stats(3)
+    integer, intent(out), optional :: stats(6)
     real(wp), intent(in), optional :: hmax
 
     integer :: icon, iha, i, j, nr, irtrn
-    integer :: nfev, njev, nlu
+    integer :: nfev, njev, nlu, nacc, nrej, nsol
     real(wp) :: x_current, xold, h, e, es, q, qa, hmax_used
     logical :: have_f
 
@@ -218,6 +218,9 @@ contains
     nfev = 0
     njev = 0
     nlu = 0
+    nacc = 0
+    nrej = 0
+    nsol = 0
     have_f = .false.
 
     outer: do
@@ -259,7 +262,7 @@ contains
 
     ! perform full integration step
 
-      call sirk3(n,fun,ip,f,y,yk1,yk2,df,2*h,nfev,nlu)
+      call sirk3(n,fun,ip,f,y,yk1,yk2,df,2*h,nfev,nlu,nsol)
 
       do i = 1, n
         ya(i) = y(i)
@@ -277,7 +280,7 @@ contains
       inner: do
         iha = iha + 1
 
-        call sirk3(n,fun,ip,f,y,yk1,yk2,df,h,nfev,nlu)
+        call sirk3(n,fun,ip,f,y,yk1,yk2,df,h,nfev,nlu,nsol)
         call fun(n,y,f)
         nfev = nfev + 1
         call jac(n,y,df)
@@ -285,7 +288,7 @@ contains
 
         yold1 = y
 
-        call sirk3(n,fun,ip,f,y,yk1,yk2,df,h,nfev,nlu)
+        call sirk3(n,fun,ip,f,y,yk1,yk2,df,h,nfev,nlu,nsol)
 
       ! half step integration finished
       ! compute deviation and compare with tolerance
@@ -314,6 +317,7 @@ contains
 
         h = h/2.0_wp
         icon = 0
+        nrej = nrej + 1
 
       end do inner
 
@@ -339,12 +343,13 @@ contains
     ! perform output if appropriate
 
       nr = nr + 1
+      nacc = nacc + 1
       if (present(solout)) then
         irtrn = 0
         call solout(nr,xold,x_current,y,iha,qa,irtrn)
         if (irtrn < 0) then
           h0 = h
-          if (present(stats)) stats = [nfev, njev, nlu]
+          if (present(stats)) stats = [nfev, njev, nlu, nacc, nrej, nsol]
           return
         end if
       end if
@@ -353,7 +358,7 @@ contains
 
       if (icon == 1) then
         h0 = h
-        if (present(stats)) stats = [nfev, njev, nlu]
+        if (present(stats)) stats = [nfev, njev, nlu, nacc, nrej, nsol]
         return
       end if
 
@@ -441,7 +446,7 @@ contains
 
   !> Single-step semi-implicit integration
   !
-  subroutine sirk3(n,fun,ipiv,f,y,yk1,yk2,df,h,nfev,nlu)
+  subroutine sirk3(n,fun,ipiv,f,y,yk1,yk2,df,h,nfev,nlu,nsol)
     integer, intent(in) :: n
       !! Size of the system of ODEs
     procedure(rhs_sub) :: fun
@@ -464,6 +469,8 @@ contains
       !! Number of right-hand side evaluations
     integer, intent(inout) :: nlu
       !! Number of LU decompositions
+    integer, intent(inout) :: nsol
+      !! Number of linear-system solves (back substitutions)
 
     integer :: i
 
@@ -487,6 +494,7 @@ contains
     call lu(df,ipiv)
     nlu = nlu + 1
     call back(df,f,ipiv)
+    nsol = nsol + 1
 
     do i = 1, n
       yk1(i) = h*f(i)
@@ -495,6 +503,7 @@ contains
     call fun(n,yk2,f)
     nfev = nfev + 1
     call back(df,f,ipiv)
+    nsol = nsol + 1
 
     !
     ! evaluate k2
@@ -510,6 +519,7 @@ contains
     ! for convenience stored in yk2
     !
     call back(df,yk2,ipiv)
+    nsol = nsol + 1
     do i = 1, n
       y(i) = y(i) + yk2(i)
     end do

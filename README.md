@@ -16,7 +16,7 @@ This repository provides a heavily refactored version of the original implementa
 - Third-order Rosenbrock-type (semi-implicit Runge-Kutta) integrator suitable for stiff ODE systems
 - Adaptive stepsize control with error tolerance per component
 - Optional maximum absolute half-step size (`hmax`) to cap step growth
-- Optional runtime statistics output: rhs evaluations (`nfev`), Jacobian evaluations (`njev`), and LU decompositions (`nlu`)
+- Optional runtime statistics output: rhs evaluations (`nfev`), Jacobian evaluations (`njev`), LU decompositions (`nlu`), successful steps (`nacc`), rejected steps (`nrej`), and linear-system solves (`nsol`)
 - Optional explicit workspace interface via `stiff3(..., rwork, iwork, ...)` for caller-managed memory
 - Dense output helper `stiff3_interp` for accepted steps in `solout`
 - Requires an exact user-supplied Jacobian
@@ -95,7 +95,7 @@ program vanpol
   integer, parameter :: n = 2
   real(wp), parameter :: mu = 10.0_wp
   real(wp) :: y(n), w(n), x0, x1, h0, eps, hmax
-  integer :: irtrn, stats(3)
+  integer :: irtrn, stats(6)
 
 ! initial value
   y = [1.0_wp, 1.0_wp]
@@ -114,7 +114,8 @@ program vanpol
   call out(0,x0,x0,y,0,0.0_wp,irtrn)
 ! integrate system of ODEs
   call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,solout=out,stats=stats,hmax=hmax)
-  print '(A,3(I0,1X))', 'nfev njev nlu: ', stats
+  print '(A,3(I0,1X))', 'nfev njev nlu: ', stats(1), stats(2), stats(3)
+  print '(A,3(I0,1X))', 'accepted rejected nsol: ', stats(4), stats(5), stats(6)
 
 contains
 
