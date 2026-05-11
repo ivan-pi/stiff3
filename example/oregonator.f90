@@ -71,6 +71,7 @@ contains
     character(len=*), intent(in), optional :: solution_filename
 
     integer :: ios
+    real(wp), parameter :: min_cpu_time = 1.0e-12_wp
     real(wp) :: cpu_start, cpu_end, h0
     logical :: write_solution
 
@@ -87,7 +88,7 @@ contains
     call cpu_time(cpu_start)
     call stiff3(n, fun, x0, y, x1, jac, h0, eps, w, solout=output_solution, stats=stats)
     call cpu_time(cpu_end)
-    cpu_time_seconds = max(0.0_wp, cpu_end - cpu_start)
+    cpu_time_seconds = max(min_cpu_time, cpu_end - cpu_start)
 
     if (write_solution) then
       close(solution_unit)
@@ -105,7 +106,7 @@ contains
     integer, intent(inout) :: irtrn
 
     if (solution_output_enabled) then
-      write(solution_unit,'(4(ES24.16,1X))') x, y(1), y(2), y(3)
+      write(solution_unit,'(ES24.16,1X,*(ES24.16,1X))') x, y
     end if
   end subroutine
 
