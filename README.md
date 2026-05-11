@@ -74,7 +74,7 @@ stiff3.git = "https://github.com/ivan-pi/stiff3"
 
 ### Running the examples
 
-Nine examples called `robertson`, `vanpol`, `lorenz`, `predator_prey`, `pendant_drop`, `three_equation_system`, `oregonator`, `e5_chemical`, and `hires` are provided. They can be run with the command
+Ten examples called `robertson`, `vanpol`, `lorenz`, `predator_prey`, `pendant_drop`, `three_equation_system`, `oregonator`, `e5_chemical`, `hires`, and `ring_modulator` are provided. They can be run with the command
 
 ```sh
 fpm run --example <name>
@@ -87,6 +87,8 @@ The `oregonator` example verifies a published reference solution at `t = 360` an
 The `e5_chemical` example verifies the Datta/Bari E5 reference solution at `t = 1.0e13` and writes `e5_chemical_work_precision.csv` together with an `e5_chemical_work_precision.svg` plot of CPU time vs error tolerance `eps` (logarithmic y-axis).
 
 The `hires` example verifies the Bari HIRES reference solution at `t = 321.8122` and writes `hires_work_precision.dat` (columns: `eps cpu_time_seconds max_relative_error nfev njev nlu nsol nacc nrej`) for plotting CPU time vs error tolerance `eps` with gnuplot.
+
+The `ring_modulator` example verifies the Bari Ring Modulator reference solution at `t = 1.0e-3` and writes `ring_modulator_work_precision.dat` (columns: `eps cpu_time_seconds max_relative_error nfev njev nlu nsol nacc nrej`) for plotting CPU time vs error tolerance `eps` with gnuplot.
 
 ## Usage
 
