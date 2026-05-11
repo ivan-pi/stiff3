@@ -116,7 +116,7 @@ program vanpol
   print '(A,I0)', '  nrej: ', stats(2)
   print '(A,I0)', '  nfev: ', stats(3)
   print '(A,I0)', '  njev: ', stats(4)
-  print '(A,I0)', '  nlu:  ', stats(5)
+  print '(A,I0)', '  nlu: ', stats(5)
   print '(A,I0)', '  nsol: ', stats(6)
 
 contains
