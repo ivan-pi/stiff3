@@ -20,11 +20,14 @@ program oregonator
   character(len=*), parameter :: solution_file = 'oregonator_solution.dat'
 
   integer :: i
+  integer :: solution_unit
   integer :: verification_stats(6)
   integer :: stats(6,ncases)
   real(wp) :: y(n), w(n), errors(ncases), cpu_times(ncases), verification_error, verification_cpu
+  logical :: solution_output_enabled
 
   w = 1.0_wp
+  solution_output_enabled = .false.
 
   call integrate_case(1.0e-8_wp, y, verification_stats, verification_cpu, solution_file)
   verification_error = max_relative_error(y, yref)
@@ -67,7 +70,7 @@ contains
     real(wp), intent(out) :: cpu_time_seconds
     character(len=*), intent(in), optional :: solution_filename
 
-    integer :: ios, solution_unit
+    integer :: ios
     real(wp) :: cpu_start, cpu_end, h0
     logical :: write_solution
 
@@ -78,32 +81,32 @@ contains
       open(newunit=solution_unit, file=solution_filename, status='replace', action='write', iostat=ios)
       if (ios /= 0) error stop 'failed to open solution output file'
       write(solution_unit,'(A)') '# t y1 y2 y3'
+      solution_output_enabled = .true.
     end if
 
     call cpu_time(cpu_start)
-    if (write_solution) then
-      call stiff3(n, fun, x0, y, x1, jac, h0, eps, w, solout=output_solution, stats=stats)
-    else
-      call stiff3(n, fun, x0, y, x1, jac, h0, eps, w, stats=stats)
-    end if
+    call stiff3(n, fun, x0, y, x1, jac, h0, eps, w, solout=output_solution, stats=stats)
     call cpu_time(cpu_end)
     cpu_time_seconds = max(0.0_wp, cpu_end - cpu_start)
 
-    if (write_solution) close(solution_unit)
+    if (write_solution) then
+      close(solution_unit)
+      solution_output_enabled = .false.
+    end if
+  end subroutine
 
-  contains
+  subroutine output_solution(nr, xold, x, y, iha, qa, irtrn)
+    integer, intent(in) :: nr
+    real(wp), intent(in) :: xold
+    real(wp), intent(in) :: x
+    real(wp), intent(in) :: y(:)
+    integer, intent(in) :: iha
+    real(wp), intent(in) :: qa
+    integer, intent(inout) :: irtrn
 
-    subroutine output_solution(nr, xold, x, y, iha, qa, irtrn)
-      integer, intent(in) :: nr
-      real(wp), intent(in) :: xold
-      real(wp), intent(in) :: x
-      real(wp), intent(in) :: y(:)
-      integer, intent(in) :: iha
-      real(wp), intent(in) :: qa
-      integer, intent(inout) :: irtrn
-
+    if (solution_output_enabled) then
       write(solution_unit,'(4(ES24.16,1X))') x, y(1), y(2), y(3)
-    end subroutine
+    end if
   end subroutine
 
   function max_relative_error(y, y_reference) result(err)
