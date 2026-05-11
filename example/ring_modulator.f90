@@ -30,15 +30,15 @@ program ring_modulator
      0.2390059075236570e-4_wp ]
   character(len=*), parameter :: output_file = 'ring_modulator_work_precision.dat'
 
-  integer :: i, m
+  integer :: i, sweep_index
   integer :: verification_stats(6)
   integer :: stats(6,ncases)
   real(wp) :: y(n), w(n), eps_values(ncases), errors(ncases), cpu_times(ncases), verification_error
 
   w = 1.0_wp
   do i = 1, ncases
-    m = i - 1
-    eps_values(i) = 10.0_wp**(-4.0_wp + real(m, wp)/4.0_wp)
+    sweep_index = i - 1
+    eps_values(i) = 10.0_wp**(-4.0_wp + real(sweep_index, wp)/4.0_wp)
   end do
 
   call integrate_case(1.0e-10_wp, y, verification_stats, verification_error)
