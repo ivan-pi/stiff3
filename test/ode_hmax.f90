@@ -10,7 +10,7 @@ program ode_hmax
   real(wp), parameter :: h0_start = 0.5_wp
   real(wp) :: y_default(n), y_zero(n), y_capped(n), w(n), x0, x1, h0, eps_test
   real(wp) :: max_h_seen
-  integer :: stats_default(3), stats_zero(3), stats_capped(3)
+  integer :: stats_default(6), stats_zero(6), stats_capped(6)
 
   w = 1.0_wp
   x0 = 0.0_wp
@@ -26,8 +26,8 @@ program ode_hmax
   call stiff3(n,fun,x0,y_zero,x1,jac,h0,eps_test,w,stats=stats_zero,hmax=0.0_wp)
 
   if (any(stats_zero /= stats_default)) then
-    print '(A,3(I0,1X),A,3(I0,1X))', &
-      'expected hmax=0 stats [nfev njev nlu] to match default. got ', stats_zero, &
+    print '(A,6(I0,1X),A,6(I0,1X))', &
+      'expected hmax=0 stats [nacc nrej nfev njev nlu nsol] to match default. got ', stats_zero, &
       ' expected ', stats_default
     error stop 1
   end if

@@ -8,7 +8,7 @@ program ode_workspace
   real(wp) :: y_auto(n), y_work(n), w(n), x0, x1, h0, eps
   real(wp), allocatable :: rwork(:)
   integer, allocatable :: iwork(:)
-  integer :: stats_auto(3), stats_work(3)
+  integer :: stats_auto(6), stats_work(6)
 
   y_auto = [1.0_wp, -0.5_wp]
   y_work = y_auto
@@ -33,8 +33,8 @@ program ode_workspace
   end if
 
   if (any(stats_auto /= stats_work)) then
-    print '(A,3(I0,1X),A,3(I0,1X))', &
-      'stats mismatch auto [nfev njev nlu]: ', stats_auto, &
+    print '(A,6(I0,1X),A,6(I0,1X))', &
+      'stats mismatch auto [nacc nrej nfev njev nlu nsol]: ', stats_auto, &
       ' work: ', stats_work
     error stop 1
   end if
