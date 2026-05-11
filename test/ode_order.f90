@@ -10,7 +10,7 @@ program ode_order
   real(wp), parameter :: hs(3) = [0.2_wp, 0.1_wp, 0.05_wp]
   real(wp) :: y(n), w(n), x0, x1, h0, eps
   real(wp) :: err(3), p12, p23
-  integer :: i
+  integer :: i, idid
 
   w = 1.0_wp
   ! Use a very large tolerance so the order check focuses on the
@@ -23,7 +23,7 @@ program ode_order
     x1 = hs(i)
     h0 = hs(i)/2.0_wp
 
-    call stiff3(n,fun,x0,y,x1,jac,h0,eps,w)
+    call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,idid)
     err(i) = max(abs(y(1)-cos(x1)),abs(y(2)+sin(x1)))
   end do
 

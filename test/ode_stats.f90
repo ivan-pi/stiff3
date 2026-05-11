@@ -37,7 +37,7 @@ program ode_stats
 
   integer, parameter :: n = 1
   real(wp) :: y(n), w(n), x0, x1, h0, eps
-  integer :: stats(3)
+  integer :: idid, stats(3)
 
   y = [1.0_wp]
   w = 1.0_wp
@@ -48,7 +48,7 @@ program ode_stats
   fun_calls = 0
   jac_calls = 0
 
-  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,stats=stats)
+  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,idid,stats=stats)
 
   if (stats(1) /= fun_calls .or. stats(2) /= jac_calls) then
     print '(A,3(I0,1X),A,2(I0,1X))', &

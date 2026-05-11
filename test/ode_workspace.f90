@@ -8,7 +8,7 @@ program ode_workspace
   real(wp) :: y_auto(n), y_work(n), w(n), x0, x1, h0, eps
   real(wp), allocatable :: rwork(:)
   integer, allocatable :: iwork(:)
-  integer :: stats_auto(3), stats_work(3)
+  integer :: idid, stats_auto(3), stats_work(3)
 
   y_auto = [1.0_wp, -0.5_wp]
   y_work = y_auto
@@ -21,10 +21,10 @@ program ode_workspace
   allocate(rwork(n*(7 + 2*n)))
   allocate(iwork(n))
 
-  call stiff3(n,fun,x0,y_auto,x1,jac,h0,eps,w,stats=stats_auto)
+  call stiff3(n,fun,x0,y_auto,x1,jac,h0,eps,w,idid,stats=stats_auto)
 
   h0 = 0.02_wp
-  call stiff3(n,fun,x0,y_work,x1,jac,h0,eps,w,rwork,iwork,stats=stats_work)
+  call stiff3(n,fun,x0,y_work,x1,jac,h0,eps,w,rwork,iwork,idid,stats=stats_work)
 
   if (any(y_auto /= y_work)) then
     print '(A,2(1X,ES12.4),A,2(1X,ES12.4))', &

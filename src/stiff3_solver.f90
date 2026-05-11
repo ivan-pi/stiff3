@@ -93,7 +93,7 @@ contains
 
   !> Semi-implicit Runge-Kutta integrator routine
   !
-  subroutine stiff3_auto(n,fun,x,y,xend,jac,h0,eps,w,solout,stats,hmax,idid)
+  subroutine stiff3_auto(n,fun,x,y,xend,jac,h0,eps,w,idid,solout,stats,hmax)
     integer, intent(in) :: n
       !! Number of equations to be integrated.
     procedure(rhs_sub) :: fun
@@ -112,6 +112,8 @@ contains
     real(wp), intent(inout) :: y(n)
       !! Vector of dependent variables at `x`. On exit `y` is the vector of
       !! dependent variables at `xend`.
+    integer, intent(out) :: idid
+      !! Return flag for success/error conditions.
     procedure(output_sub), optional :: solout
       !! User supplied subprogram for output.
     integer, intent(out), optional :: stats(3)
@@ -119,8 +121,6 @@ contains
     real(wp), intent(in), optional :: hmax
       !! Maximum absolute half-step size. If absent or zero, defaults to
       !! `abs(xend - x)`.
-    integer, intent(out), optional :: idid
-      !! Return flag for success/error conditions.
 
     real(wp), dimension(n) :: yk1, yk2, ya, yold, yold1, f, fold
       !! Workspace for solution vector and right-hand side
@@ -139,7 +139,7 @@ contains
 
   !> Semi-implicit Runge-Kutta integrator routine with explicit workspace
   !
-  subroutine stiff3_work(n,fun,x,y,xend,jac,h0,eps,w,rwork,iwork,solout,stats,hmax,idid)
+  subroutine stiff3_work(n,fun,x,y,xend,jac,h0,eps,w,rwork,iwork,idid,solout,stats,hmax)
     integer, intent(in) :: n
       !! Number of equations to be integrated.
     procedure(rhs_sub) :: fun
@@ -162,6 +162,8 @@ contains
       !! Real workspace of size `n*(7 + 2*n)`.
     integer, intent(inout) :: iwork(n)
       !! Integer workspace of size `n`.
+    integer, intent(out) :: idid
+      !! Return flag for success/error conditions.
     procedure(output_sub), optional :: solout
       !! User supplied subprogram for output.
     integer, intent(out), optional :: stats(3)
@@ -169,21 +171,19 @@ contains
     real(wp), intent(in), optional :: hmax
       !! Maximum absolute half-step size. If absent or zero, defaults to
       !! `abs(xend - x)`.
-    integer, intent(out), optional :: idid
-      !! Return flag for success/error conditions.
 
     call stiff3_core(n,fun,x,y,xend,jac,h0,eps,w, &
                      yk1   = rwork(1), &
                      yk2   = rwork(n+1), &
                      ya    = rwork(2*n+1), &
                      yold  = rwork(3*n+1), &
-                     yold1 = rwork(4*n+1), &
-                     f     = rwork(5*n+1), &
+                      yold1 = rwork(4*n+1), &
+                      f     = rwork(5*n+1), &
                       fold  = rwork(6*n+1), &
                       df    = rwork(7*n+1), &
                       dfold = rwork(7*n+n*n+1), &
                       ip    = iwork(1), &
-                      solout=solout,stats=stats,hmax=hmax,idid=idid)
+                      idid=idid,solout=solout,stats=stats,hmax=hmax)
 
   end subroutine
 
@@ -192,7 +192,7 @@ contains
   !
   subroutine stiff3_core(n,fun,x,y,xend,jac,h0,eps,w, &
                          yk1,yk2,ya,yold,yold1,f,fold,df,dfold,ip, &
-                         solout,stats,hmax,idid)
+                         idid,solout,stats,hmax)
     integer, intent(in) :: n
     procedure(rhs_sub) :: fun
     procedure(jacobian_sub) :: jac
@@ -203,10 +203,10 @@ contains
     real(wp), intent(inout) :: yk1(n), yk2(n), ya(n), yold(n), yold1(n), f(n), fold(n)
     real(wp), intent(inout) :: df(n,n), dfold(n,n)
     integer, intent(inout) :: ip(n)
+    integer, intent(out) :: idid
     procedure(output_sub), optional :: solout
     integer, intent(out), optional :: stats(3)
     real(wp), intent(in), optional :: hmax
-    integer, intent(out), optional :: idid
 
     integer :: icon, iha, i, j, nr, irtrn, lu_info
     integer :: nfev, njev, nlu
@@ -233,7 +233,7 @@ contains
     njev = 0
     nlu = 0
     have_f = .false.
-    if (present(idid)) idid = 0
+    idid = 0
 
     outer: do
 
@@ -278,7 +278,7 @@ contains
       if (lu_info /= 0) then
         h0 = h
         if (present(stats)) stats = [nfev, njev, nlu]
-        if (present(idid)) idid = -1
+        idid = -1
         return
       end if
 
@@ -302,7 +302,7 @@ contains
         if (lu_info /= 0) then
           h0 = h
           if (present(stats)) stats = [nfev, njev, nlu]
-          if (present(idid)) idid = -1
+          idid = -1
           return
         end if
         call fun(n,y,f)
@@ -316,7 +316,7 @@ contains
         if (lu_info /= 0) then
           h0 = h
           if (present(stats)) stats = [nfev, njev, nlu]
-          if (present(idid)) idid = -1
+          idid = -1
           return
         end if
 
@@ -351,7 +351,7 @@ contains
           print *, "Error: Step-size underflow. The step-size is smaller than the number spacing at x."
           h0 = h
           if (present(stats)) stats = [nfev, njev, nlu]
-          if (present(idid)) idid = -3
+          idid = -3
           return
         end if
 
@@ -385,7 +385,7 @@ contains
         if (irtrn < 0) then
           h0 = h
           if (present(stats)) stats = [nfev, njev, nlu]
-          if (present(idid)) idid = -2
+          idid = -2
           return
         end if
       end if
@@ -395,7 +395,7 @@ contains
       if (icon == 1) then
         h0 = h
         if (present(stats)) stats = [nfev, njev, nlu]
-        if (present(idid)) idid = 0
+        idid = 0
         return
       end if
 

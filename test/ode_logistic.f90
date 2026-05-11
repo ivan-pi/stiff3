@@ -8,6 +8,7 @@ program ode_logistic
   real(wp), parameter :: y0 = 0.2_wp
   real(wp), parameter :: tol = 1.0e-8_wp
   real(wp) :: y(n), w(n), x0, x1, h0, eps, exact, err, c
+  integer :: idid
 
   y = [y0]
   w = 1.0_wp
@@ -16,7 +17,7 @@ program ode_logistic
   h0 = 0.01_wp
   eps = 1.0e-10_wp
 
-  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w)
+  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,idid)
 
   c = (1.0_wp - y0)/y0
   exact = 1.0_wp/(1.0_wp + c*exp(-x1))

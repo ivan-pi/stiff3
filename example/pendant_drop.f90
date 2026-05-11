@@ -7,6 +7,7 @@ program pendant_drop
   integer, parameter :: n = 3
   real(wp) :: y(n), w(n), x0, x1, h0, eps
   real(wp) :: pL, drho, ds
+  integer :: idid
 
 ! dimensionless pressure offset and density difference
   pL = 3.3888_wp
@@ -30,7 +31,7 @@ program pendant_drop
 ! output initial condition at s = 0
   write(*,'(4(E18.12,2X),I4,2X,G0)') 0.0_wp, 0.0_wp, 0.0_wp, 0.0_wp, 0, 0.0_wp
 ! integrate Young-Laplace system
-  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,solout=out)
+  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,idid,solout=out)
 
 contains
 

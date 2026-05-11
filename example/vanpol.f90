@@ -6,7 +6,7 @@ program vanpol
   integer, parameter :: n = 2
   real(wp), parameter :: mu = 10.0_wp
   real(wp) :: y(n), w(n), x0, x1, h0, eps
-  integer :: irtrn
+  integer :: irtrn, idid
 
 ! initial value
   y = [1.0_wp, 1.0_wp]
@@ -22,7 +22,7 @@ program vanpol
   irtrn = 0
   call out(0,x0,x0,y,0,0.0_wp,irtrn)
 ! integrate system of ODEs
-  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,solout=out)
+  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,idid,solout=out)
 
 contains
 
