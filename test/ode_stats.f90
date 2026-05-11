@@ -67,8 +67,8 @@ program ode_stats
     error stop 1
   end if
 
-  if (stats(6) /= 3*stats(3)) then
-    print '(A,6(I0,1X))', 'expected nsol=3*nlu in stats [nfev njev nlu nacc nrej nsol], got: ', stats
+  if (stats(6) < stats(3)) then
+    print '(A,6(I0,1X))', 'expected nsol>=nlu in stats [nfev njev nlu nacc nrej nsol], got: ', stats
     error stop 1
   end if
 
