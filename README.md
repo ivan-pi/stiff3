@@ -16,6 +16,7 @@ This repository provides a heavily refactored version of the original implementa
 - Third-order Rosenbrock-type (semi-implicit Runge-Kutta) integrator suitable for stiff ODE systems
 - Adaptive stepsize control with error tolerance per component
 - Optional maximum absolute half-step size (`hmax`) to cap step growth
+- Integer status flag output (`idid`) for success/error reporting
 - Optional runtime statistics output: successful steps (`nacc`), rejected steps (`nrej`), rhs evaluations (`nfev`), Jacobian evaluations (`njev`), LU decompositions (`nlu`), and linear-system solves (`nsol`)
 - Optional explicit workspace interface via `stiff3(..., rwork, iwork, ...)` for caller-managed memory
 - Dense output helper `stiff3_interp` for accepted steps in `solout`
@@ -103,7 +104,7 @@ program vanpol
   integer, parameter :: n = 2
   real(wp), parameter :: mu = 10.0_wp
   real(wp) :: y(n), w(n), x0, x1, h0, eps, hmax
-  integer :: stats(6)
+  integer :: idid, stats(6)
 
 ! initial value
   y = [1.0_wp, 1.0_wp]
@@ -118,7 +119,8 @@ program vanpol
   x0 = 0.0_wp
   x1 = 100.0_wp
 ! integrate system of ODEs
-  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,solout=out,stats=stats,hmax=hmax)
+  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,idid,solout=out,stats=stats,hmax=hmax)
+  print '(A,I0)', 'idid: ', idid
   print '(A)', 'Solver statistics'
   print '(A,I0)', '  nacc: ', stats(1)
   print '(A,I0)', '  nrej: ', stats(2)
@@ -188,6 +190,13 @@ When using this explicit-workspace overload together with `solout`, accepted-ste
 These routines evaluate a cubic Hermite interpolant over the current accepted step `[xold, x]`. They are only valid inside the active `solout` callback of `stiff3_work`, and `xeval` must lie within the current accepted step.
 
 You can also optionally pass `hmax` to limit the absolute half-step size used by the adaptive controller. If `hmax` is omitted or set to `0`, the default is `abs(x1-x0)`. If provided and positive, the solver uses `min(hmax, abs(x1-x0))`. Negative values are rejected.
+
+The optional integer return flag `idid` reports solver status:
+
+- `0`: successful completion at `x1`
+- `-1`: LU factorization failed (singular Jacobian matrix)
+- `-2`: integration interrupted by user callback (`irtrn < 0`)
+- `-3`: step-size underflow during bisection (`abs(h) <= spacing(x_current)`)
 
 **How the tolerance is applied:** after each step the solver estimates the local error in each component and checks:
 
