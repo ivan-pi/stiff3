@@ -80,7 +80,7 @@ contains
   subroutine write_csv(filename, eps, err, stats)
     character(len=*), intent(in) :: filename
     real(wp), intent(in) :: eps(:), err(:)
-    integer, intent(in) :: stats(6,:)
+    integer, intent(in) :: stats(:,:)
 
     integer :: i, ios, unit
 
@@ -134,7 +134,9 @@ contains
     write(unit,'(A,I0,A,I0,A)') '<svg xmlns="http://www.w3.org/2000/svg" width="', width, &
       '" height="', height, '" viewBox="0 0 800 600">'
     write(unit,'(A)') '<rect width="100%" height="100%" fill="white"/>'
-    write(unit,'(A)') '<text x="400" y="28" font-family="sans-serif" font-size="22" text-anchor="middle">Oregonator work-precision diagram</text>'
+    write(unit,'(A)') &
+      '<text x="400" y="28" font-family="sans-serif" font-size="22" ' // &
+      'text-anchor="middle">Oregonator work-precision diagram</text>'
     write(unit,'(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A)') &
       '<rect x="', left, '" y="', top, '" width="', real(width,wp) - left - right, &
       '" height="', real(height,wp) - top - bottom, '" fill="none" stroke="black" stroke-width="1.5"/>'
@@ -159,21 +161,26 @@ contains
       write(unit,'(A)') trim(adjustl(label))//'</text>'
     end do
 
-    write(unit,'(A)') '<text x="435" y="585" font-family="sans-serif" font-size="16" text-anchor="middle">rhs evaluations (nfev)</text>'
-    write(unit,'(A)') '<text x="24" y="285" font-family="sans-serif" font-size="16" text-anchor="middle" transform="rotate(-90 24 285)">max relative error</text>'
+    write(unit,'(A)') &
+      '<text x="435" y="585" font-family="sans-serif" font-size="16" ' // &
+      'text-anchor="middle">rhs evaluations (nfev)</text>'
+    write(unit,'(A)') &
+      '<text x="24" y="285" font-family="sans-serif" font-size="16" ' // &
+      'text-anchor="middle" transform="rotate(-90 24 285)">' // &
+      'max relative error</text>'
 
     do i = 1, size(work) - 1
-      x1p = xcoord(log_work(i), xmin, xmax)
-      y1p = ycoord(log_err(i), ymin, ymax)
-      x2p = xcoord(log_work(i + 1), xmin, xmax)
-      y2p = ycoord(log_err(i + 1), ymin, ymax)
+      x1p = xcoord(log_work(i), xmin, xmax, width, left, right)
+      y1p = ycoord(log_err(i), ymin, ymax, height, top, bottom)
+      x2p = xcoord(log_work(i + 1), xmin, xmax, width, left, right)
+      y2p = ycoord(log_err(i + 1), ymin, ymax, height, top, bottom)
       write(unit,'(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A)') '<line x1="', x1p, '" y1="', y1p, &
         '" x2="', x2p, '" y2="', y2p, '" stroke="#1f77b4" stroke-width="2"/>'
     end do
 
     do i = 1, size(work)
-      x1p = xcoord(log_work(i), xmin, xmax)
-      y1p = ycoord(log_err(i), ymin, ymax)
+      x1p = xcoord(log_work(i), xmin, xmax, width, left, right)
+      y1p = ycoord(log_err(i), ymin, ymax, height, top, bottom)
       write(label,'(ES9.1)') eps(i)
       write(unit,'(A,F0.3,A,F0.3,A)') '<circle cx="', x1p, '" cy="', y1p, '" r="4.5" fill="#d62728"/>'
       write(unit,'(A,F0.3,A,F0.3,A)') '<text x="', x1p + 8.0_wp, '" y="', y1p - 8.0_wp, &
@@ -185,23 +192,24 @@ contains
 
     close(unit)
 
-  contains
-
-    function xcoord(value, xmin, xmax) result(xplot)
-      real(wp), intent(in) :: value, xmin, xmax
-      real(wp) :: xplot
-
-      xplot = left + (value - xmin)*(real(width,wp) - left - right)/(xmax - xmin)
-    end function
-
-    function ycoord(value, ymin, ymax) result(yplot)
-      real(wp), intent(in) :: value, ymin, ymax
-      real(wp) :: yplot
-
-      yplot = real(height,wp) - bottom - (value - ymin)*(real(height,wp) - top - bottom)/(ymax - ymin)
-    end function
-
   end subroutine
+
+  function xcoord(value, xmin, xmax, width, left, right) result(xplot)
+    real(wp), intent(in) :: value, xmin, xmax, left, right
+    integer, intent(in) :: width
+    real(wp) :: xplot
+
+    xplot = left + (value - xmin)*(real(width,wp) - left - right)/(xmax - xmin)
+  end function
+
+  function ycoord(value, ymin, ymax, height, top, bottom) result(yplot)
+    real(wp), intent(in) :: value, ymin, ymax, top, bottom
+    integer, intent(in) :: height
+    real(wp) :: yplot
+
+    yplot = real(height,wp) - bottom - &
+      (value - ymin)*(real(height,wp) - top - bottom)/(ymax - ymin)
+  end function
 
   subroutine fun(n, y, f)
     integer, intent(in) :: n
