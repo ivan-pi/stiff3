@@ -17,15 +17,16 @@ program oregonator
     1.0e-4_wp, 1.0e-5_wp, 1.0e-6_wp, 1.0e-7_wp, 1.0e-8_wp, 1.0e-9_wp ]
   character(len=*), parameter :: csv_file = 'oregonator_work_precision.csv'
   character(len=*), parameter :: svg_file = 'oregonator_work_precision.svg'
+  character(len=*), parameter :: solution_file = 'oregonator_solution.dat'
 
   integer :: i
   integer :: verification_stats(6)
   integer :: stats(6,ncases)
-  real(wp) :: y(n), w(n), errors(ncases), work(ncases), verification_error
+  real(wp) :: y(n), w(n), errors(ncases), cpu_times(ncases), verification_error, verification_cpu
 
   w = 1.0_wp
 
-  call integrate_case(1.0e-8_wp, y, verification_stats)
+  call integrate_case(1.0e-8_wp, y, verification_stats, verification_cpu, solution_file)
   verification_error = max_relative_error(y, yref)
   if (verification_error > verification_tol) then
     print '(A,ES12.4,A,ES12.4)', &
@@ -36,38 +37,73 @@ program oregonator
 
   print '(A,ES12.4)', 'verified reference solution with max relative error ', verification_error
   print '(A,3(1X,ES24.16))', 'y(360) =', y
+  print '(A,1X,ES12.4,1X,A)', 'verification cpu time:', verification_cpu, 's'
   print '(A,6(I0,1X))', 'verification stats [nacc nrej nfev njev nlu nsol]: ', verification_stats
 
   do i = 1, ncases
-    call integrate_case(eps_values(i), y, stats(:,i))
+    call integrate_case(eps_values(i), y, stats(:,i), cpu_times(i))
     errors(i) = max_relative_error(y, yref)
-    work(i) = real(stats(3,i), wp)
   end do
 
-  call write_csv(csv_file, eps_values, errors, stats)
-  call write_svg(svg_file, eps_values, errors, work)
+  call write_csv(csv_file, eps_values, errors, cpu_times, stats)
+  call write_svg(svg_file, eps_values, errors, cpu_times)
 
   print '(A)', 'work-precision data:'
-  print '(A)', '  eps         error        nfev   njev   nlu   nsol'
+  print '(A)', '  eps         error      cpu[s]      nfev   njev   nlu   nsol'
   do i = 1, ncases
-    print '(2(1X,ES10.2),4(1X,I6))', eps_values(i), errors(i), &
+    print '(3(1X,ES10.2),4(1X,I6))', eps_values(i), errors(i), cpu_times(i), &
       stats(3,i), stats(4,i), stats(5,i), stats(6,i)
   end do
   print '(A,1X,A)', 'wrote', csv_file
   print '(A,1X,A)', 'wrote', svg_file
+  print '(A,1X,A)', 'wrote', solution_file
 
 contains
 
-  subroutine integrate_case(eps, y, stats)
+  subroutine integrate_case(eps, y, stats, cpu_time_seconds, solution_filename)
     real(wp), intent(in) :: eps
     real(wp), intent(out) :: y(n)
     integer, intent(out) :: stats(6)
+    real(wp), intent(out) :: cpu_time_seconds
+    character(len=*), intent(in), optional :: solution_filename
 
-    real(wp) :: h0
+    integer :: ios, solution_unit
+    real(wp) :: cpu_start, cpu_end, h0
+    logical :: write_solution
 
     y = y0
     h0 = h0_initial
-    call stiff3(n, fun, x0, y, x1, jac, h0, eps, w, stats=stats)
+    write_solution = present(solution_filename)
+    if (write_solution) then
+      open(newunit=solution_unit, file=solution_filename, status='replace', action='write', iostat=ios)
+      if (ios /= 0) error stop 'failed to open solution output file'
+      write(solution_unit,'(A)') '# t y1 y2 y3'
+    end if
+
+    call cpu_time(cpu_start)
+    if (write_solution) then
+      call stiff3(n, fun, x0, y, x1, jac, h0, eps, w, solout=output_solution, stats=stats)
+    else
+      call stiff3(n, fun, x0, y, x1, jac, h0, eps, w, stats=stats)
+    end if
+    call cpu_time(cpu_end)
+    cpu_time_seconds = max(0.0_wp, cpu_end - cpu_start)
+
+    if (write_solution) close(solution_unit)
+
+  contains
+
+    subroutine output_solution(nr, xold, x, y, iha, qa, irtrn)
+      integer, intent(in) :: nr
+      real(wp), intent(in) :: xold
+      real(wp), intent(in) :: x
+      real(wp), intent(in) :: y(:)
+      integer, intent(in) :: iha
+      real(wp), intent(in) :: qa
+      integer, intent(inout) :: irtrn
+
+      write(solution_unit,'(4(ES24.16,1X))') x, y(1), y(2), y(3)
+    end subroutine
   end subroutine
 
   function max_relative_error(y, y_reference) result(err)
@@ -77,9 +113,9 @@ contains
     err = maxval(abs(y - y_reference)/max(1.0_wp, abs(y_reference)))
   end function
 
-  subroutine write_csv(filename, eps, err, stats)
+  subroutine write_csv(filename, eps, err, cpu, stats)
     character(len=*), intent(in) :: filename
-    real(wp), intent(in) :: eps(:), err(:)
+    real(wp), intent(in) :: eps(:), err(:), cpu(:)
     integer, intent(in) :: stats(:,:)
 
     integer :: i, ios, unit
@@ -87,18 +123,18 @@ contains
     open(newunit=unit, file=filename, status='replace', action='write', iostat=ios)
     if (ios /= 0) error stop 'failed to open CSV output file'
 
-    write(unit,'(A)') 'eps,max_relative_error,nfev,njev,nlu,nsol,nacc,nrej'
+    write(unit,'(A)') 'eps,max_relative_error,cpu_time_seconds,nfev,njev,nlu,nsol,nacc,nrej'
     do i = 1, size(eps)
-      write(unit,'(ES24.16,'','',ES24.16,'','',I0,'','',I0,'','',I0,'','',I0,'','',I0,'','',I0)') &
-        eps(i), err(i), stats(3,i), stats(4,i), stats(5,i), stats(6,i), stats(1,i), stats(2,i)
+      write(unit,'(ES24.16,'','',ES24.16,'','',ES24.16,'','',I0,'','',I0,'','',I0,'','',I0,'','',I0,'','',I0)') &
+        eps(i), err(i), cpu(i), stats(3,i), stats(4,i), stats(5,i), stats(6,i), stats(1,i), stats(2,i)
     end do
 
     close(unit)
   end subroutine
 
-  subroutine write_svg(filename, eps, err, work)
+  subroutine write_svg(filename, eps, err, cpu)
     character(len=*), intent(in) :: filename
-    real(wp), intent(in) :: eps(:), err(:), work(:)
+    real(wp), intent(in) :: eps(:), err(:), cpu(:)
 
     integer, parameter :: width = 800
     integer, parameter :: height = 600
@@ -109,15 +145,15 @@ contains
 
     character(len=32) :: label
     integer :: i, ios, unit
-    real(wp) :: log_work(size(work)), log_err(size(err))
+    real(wp) :: log_cpu(size(cpu)), log_err(size(err))
     real(wp) :: xmin, xmax, ymin, ymax, xpad, ypad
     real(wp) :: x1p, x2p, y1p, y2p, xtick, ytick, tick_value
 
-    log_work = log10(max(work, tiny(1.0_wp)))
+    log_cpu = log10(max(cpu, tiny(1.0_wp)))
     log_err = log10(max(err, tiny(1.0_wp)))
 
-    xmin = minval(log_work)
-    xmax = maxval(log_work)
+    xmin = minval(log_cpu)
+    xmax = maxval(log_cpu)
     ymin = minval(log_err)
     ymax = maxval(log_err)
     xpad = 0.05_wp*max(xmax - xmin, 1.0_wp)
@@ -163,23 +199,23 @@ contains
 
     write(unit,'(A)') &
       '<text x="435" y="585" font-family="sans-serif" font-size="16" ' // &
-      'text-anchor="middle">rhs evaluations (nfev)</text>'
+      'text-anchor="middle">CPU time [s]</text>'
     write(unit,'(A)') &
       '<text x="24" y="285" font-family="sans-serif" font-size="16" ' // &
       'text-anchor="middle" transform="rotate(-90 24 285)">' // &
       'max relative error</text>'
 
-    do i = 1, size(work) - 1
-      x1p = xcoord(log_work(i), xmin, xmax, width, left, right)
+    do i = 1, size(cpu) - 1
+      x1p = xcoord(log_cpu(i), xmin, xmax, width, left, right)
       y1p = ycoord(log_err(i), ymin, ymax, height, top, bottom)
-      x2p = xcoord(log_work(i + 1), xmin, xmax, width, left, right)
+      x2p = xcoord(log_cpu(i + 1), xmin, xmax, width, left, right)
       y2p = ycoord(log_err(i + 1), ymin, ymax, height, top, bottom)
       write(unit,'(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A)') '<line x1="', x1p, '" y1="', y1p, &
         '" x2="', x2p, '" y2="', y2p, '" stroke="#1f77b4" stroke-width="2"/>'
     end do
 
-    do i = 1, size(work)
-      x1p = xcoord(log_work(i), xmin, xmax, width, left, right)
+    do i = 1, size(cpu)
+      x1p = xcoord(log_cpu(i), xmin, xmax, width, left, right)
       y1p = ycoord(log_err(i), ymin, ymax, height, top, bottom)
       write(label,'(ES9.1)') eps(i)
       write(unit,'(A,F0.3,A,F0.3,A)') '<circle cx="', x1p, '" cy="', y1p, '" r="4.5" fill="#d62728"/>'
