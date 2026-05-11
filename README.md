@@ -82,7 +82,7 @@ fpm run --example <name>
 
 With CMake, the compiled executables are placed in the `build/example/` directory and can be run directly or via CTest.
 
-The `oregonator` example verifies a published reference solution at `t = 360` and writes `oregonator_work_precision.csv` together with an `oregonator_work_precision.svg` plot in the current working directory.
+The `oregonator` example verifies a published reference solution at `t = 360` and writes `oregonator_work_precision.csv`, an `oregonator_work_precision.svg` (error vs CPU time) plot, and `oregonator_solution.dat` (columns `t y1 y2 y3` for gnuplot) in the current working directory.
 
 ## Usage
 
