@@ -202,7 +202,7 @@ contains
 
     write(unit,'(A)') &
       '<text x="435" y="585" font-family="sans-serif" font-size="16" ' // &
-      'text-anchor="middle">error tolerance eps</text>'
+      'text-anchor="middle">error tolerance (eps)</text>'
     write(unit,'(A)') &
       '<text x="24" y="285" font-family="sans-serif" font-size="16" ' // &
       'text-anchor="middle" transform="rotate(-90 24 285)">' // &
