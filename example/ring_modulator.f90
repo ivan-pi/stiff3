@@ -227,26 +227,31 @@ contains
     df(3,6) = -qpud4/cs
     df(3,7) = (qpud1 + qpud4)/cs
     df(3,10) = 1.0_wp/cs
+    df(3,16) = (qpud1 + qpud4)*duin2/cs
     df(4,4) = (-qpud2 - qpud3)/cs
     df(4,5) = -qpud3/cs
     df(4,6) = qpud2/cs
     df(4,7) = (-qpud2 - qpud3)/cs
     df(4,11) = -1.0_wp/cs
+    df(4,16) = (-qpud2 - qpud3)*duin2/cs
     df(5,3) = qpud1/cs
     df(5,4) = -qpud3/cs
     df(5,5) = (-qpud1 - qpud3)/cs
     df(5,7) = (-qpud1 - qpud3)/cs
     df(5,12) = 1.0_wp/cs
+    df(5,16) = (-qpud1 - qpud3)*duin2/cs
     df(6,3) = -qpud4/cs
     df(6,4) = qpud2/cs
     df(6,6) = (-qpud2 - qpud4)/cs
     df(6,7) = (qpud2 + qpud4)/cs
     df(6,13) = -1.0_wp/cs
+    df(6,16) = (qpud2 + qpud4)*duin2/cs
     df(7,3) = (qpud1 + qpud4)/cp
     df(7,4) = (-qpud2 - qpud3)/cp
     df(7,5) = (-qpud1 - qpud3)/cp
     df(7,6) = (qpud2 + qpud4)/cp
     df(7,7) = (-qpud1 - qpud2 - qpud3 - qpud4 - 1.0_wp/rp)/cp
+    df(7,16) = (-qpud1 - qpud2 - qpud3 - qpud4)*duin2/cp
     df(8,1) = -1.0_wp/lh
     df(9,2) = -1.0_wp/lh
     df(10,1) = 0.5_wp/ls2
@@ -263,14 +268,9 @@ contains
     df(13,13) = -rg3/ls3
     df(14,1) = -1.0_wp/ls1
     df(14,14) = -(ri + rg1)/ls1
+    df(14,16) = duin1/ls1
     df(15,2) = -1.0_wp/ls1
     df(15,15) = -(rc + rg1)/ls1
-    df(3,16) = (qpud1 + qpud4)*duin2/cs
-    df(4,16) = (-qpud2 - qpud3)*duin2/cs
-    df(5,16) = (-qpud1 - qpud3)*duin2/cs
-    df(6,16) = (qpud2 + qpud4)*duin2/cs
-    df(7,16) = (-qpud1 - qpud2 - qpud3 - qpud4)*duin2/cp
-    df(14,16) = duin1/ls1
   end subroutine
 
 end program
