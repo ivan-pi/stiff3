@@ -28,12 +28,10 @@ program pendant_drop
   eps = 1.0e-6_wp
   w = 1.0_wp
 
-! output initial condition at s = 0
-  write(*,'(4(E18.12,2X),I4,2X,G0)') 0.0_wp, 0.0_wp, 0.0_wp, 0.0_wp, 0, 0.0_wp
 ! integrate Young-Laplace system
   call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,solout=out,stats=stats)
-  print '(A,3(I0,1X))', 'nfev njev nlu: ', stats(1), stats(2), stats(3)
-  print '(A,3(I0,1X))', 'accepted rejected nsol: ', stats(4), stats(5), stats(6)
+  print '(A,3(I0,1X))', 'accepted rejected nfev: ', stats(1), stats(2), stats(3)
+  print '(A,3(I0,1X))', 'njev nlu nsol: ', stats(4), stats(5), stats(6)
 
 contains
 

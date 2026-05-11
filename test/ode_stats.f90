@@ -50,25 +50,25 @@ program ode_stats
 
   call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,stats=stats)
 
-  if (stats(1) /= fun_calls .or. stats(2) /= jac_calls) then
+  if (stats(3) /= fun_calls .or. stats(4) /= jac_calls) then
     print '(A,6(I0,1X),A,2(I0,1X))', &
-      'stats mismatch [nfev njev nlu nacc nrej nsol]: ', stats, &
+      'stats mismatch [nacc nrej nfev njev nlu nsol]: ', stats, &
       ' callback counts [fun jac]: ', fun_calls, jac_calls
     error stop 1
   end if
 
-  if (stats(3) <= 0) then
-    print '(A,6(I0,1X))', 'expected positive nlu in stats [nfev njev nlu nacc nrej nsol], got: ', stats
+  if (stats(5) <= 0) then
+    print '(A,6(I0,1X))', 'expected positive nlu in stats [nacc nrej nfev njev nlu nsol], got: ', stats
     error stop 1
   end if
 
-  if (stats(4) <= 0 .or. stats(5) < 0) then
-    print '(A,6(I0,1X))', 'expected nonnegative step counters [nfev njev nlu nacc nrej nsol], got: ', stats
+  if (stats(1) <= 0 .or. stats(2) < 0) then
+    print '(A,6(I0,1X))', 'expected nonnegative step counters [nacc nrej nfev njev nlu nsol], got: ', stats
     error stop 1
   end if
 
-  if (stats(6) < stats(3)) then
-    print '(A,6(I0,1X))', 'expected nsol>=nlu in stats [nfev njev nlu nacc nrej nsol], got: ', stats
+  if (stats(6) < stats(5)) then
+    print '(A,6(I0,1X))', 'expected nsol>=nlu in stats [nacc nrej nfev njev nlu nsol], got: ', stats
     error stop 1
   end if
 

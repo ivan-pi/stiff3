@@ -27,7 +27,7 @@ program ode_hmax
 
   if (any(stats_zero /= stats_default)) then
     print '(A,6(I0,1X),A,6(I0,1X))', &
-      'expected hmax=0 stats [nfev njev nlu nacc nrej nsol] to match default. got ', stats_zero, &
+      'expected hmax=0 stats [nacc nrej nfev njev nlu nsol] to match default. got ', stats_zero, &
       ' expected ', stats_default
     error stop 1
   end if

@@ -48,7 +48,7 @@ module stiff3_solver
     subroutine output_sub(nr,xold,x,y,iha,qa,irtrn)
       import wp
       integer, intent(in) :: nr
-        !! Number of successful steps that have been taken
+        !! Number of the current grid point, starting at 1 for the initial value
       real(wp), intent(in) :: xold
         !! Previous value of the independent variable
       real(wp), intent(in) :: x
@@ -106,7 +106,7 @@ contains
     procedure(output_sub), optional :: solout
       !! User supplied subprogram for output.
     integer, intent(out), optional :: stats(6)
-      !! Statistics array with `[nfev, njev, nlu, nacc, nrej, nsol]`.
+      !! Statistics array with `[nacc, nrej, nfev, njev, nlu, nsol]`.
     real(wp), intent(in), optional :: hmax
       !! Maximum absolute half-step size. If absent or zero, defaults to
       !! `abs(xend - x)`.
@@ -154,7 +154,7 @@ contains
     procedure(output_sub), optional :: solout
       !! User supplied subprogram for output.
     integer, intent(out), optional :: stats(6)
-      !! Statistics array with `[nfev, njev, nlu, nacc, nrej, nsol]`.
+      !! Statistics array with `[nacc, nrej, nfev, njev, nlu, nsol]`.
     real(wp), intent(in), optional :: hmax
       !! Maximum absolute half-step size. If absent or zero, defaults to
       !! `abs(xend - x)`.
@@ -194,7 +194,7 @@ contains
     integer, intent(out), optional :: stats(6)
     real(wp), intent(in), optional :: hmax
 
-    integer :: icon, iha, i, j, nr, irtrn
+    integer :: icon, iha, i, j, irtrn
     integer :: nfev, njev, nlu, nacc, nrej, nsol
     real(wp) :: x_current, xold, h, e, es, q, qa, hmax_used
     logical :: have_f
@@ -202,7 +202,6 @@ contains
   ! icon = 0 except for last step which ends exactly at x1
     icon = 0
 
-    nr = 0
     x_current = x
     if (present(hmax)) then
       if (hmax < 0.0_wp) error stop 'stiff3: hmax must be a non-negative real value'
@@ -222,6 +221,16 @@ contains
     nrej = 0
     nsol = 0
     have_f = .false.
+
+    if (present(solout)) then
+      irtrn = 0
+      call solout(1,x_current,x_current,y,0,0.0_wp,irtrn)
+      if (irtrn < 0) then
+        h0 = h
+        if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
+        return
+      end if
+    end if
 
     outer: do
 
@@ -342,14 +351,13 @@ contains
 
     ! perform output if appropriate
 
-      nr = nr + 1
       nacc = nacc + 1
       if (present(solout)) then
         irtrn = 0
-        call solout(nr,xold,x_current,y,iha,qa,irtrn)
+        call solout(nacc+1,xold,x_current,y,iha,qa,irtrn)
         if (irtrn < 0) then
           h0 = h
-          if (present(stats)) stats = [nfev, njev, nlu, nacc, nrej, nsol]
+          if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
           return
         end if
       end if
@@ -358,7 +366,7 @@ contains
 
       if (icon == 1) then
         h0 = h
-        if (present(stats)) stats = [nfev, njev, nlu, nacc, nrej, nsol]
+        if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
         return
       end if
 

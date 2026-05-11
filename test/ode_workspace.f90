@@ -34,7 +34,7 @@ program ode_workspace
 
   if (any(stats_auto /= stats_work)) then
     print '(A,6(I0,1X),A,6(I0,1X))', &
-      'stats mismatch auto [nfev njev nlu nacc nrej nsol]: ', stats_auto, &
+      'stats mismatch auto [nacc nrej nfev njev nlu nsol]: ', stats_auto, &
       ' work: ', stats_work
     error stop 1
   end if
