@@ -35,7 +35,7 @@ contains
     real(wp), intent(in) :: y(n)
     real(wp), intent(inout) :: f(n)
 
-    f(1) = -k1*y(1) - k2*y(2)*y(3)
+    f(1) = -k1*y(1) - k2*y(1)*y(3)
     f(2) = -k3*y(2)*y(3)
     f(3) = -k1*y(1) - k2*y(1)*y(3) - k3*y(2)*y(3)
   end subroutine
@@ -45,9 +45,9 @@ contains
     real(wp), intent(in) :: y(n)
     real(wp), intent(inout) :: df(n,n)
 
-    df(1,1) = -k1
-    df(1,2) = -k2*y(3)
-    df(1,3) = -k2*y(2)
+    df(1,1) = -k1 - k2*y(3)
+    df(1,2) = 0.0_wp
+    df(1,3) = -k2*y(1)
 
     df(2,1) = 0.0_wp
     df(2,2) = -k3*y(3)
