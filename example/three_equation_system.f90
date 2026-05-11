@@ -3,6 +3,7 @@ program three_equation_system
   use stiff3_solver, only: wp => stiff3_wp, stiff3
   implicit none
 
+! Example from Numerical Recipes in Fortran, Second Edition, pp. 734-735.
   integer, parameter :: n = 3
   real(wp), parameter :: k1 = 0.013_wp
   real(wp), parameter :: k2 = 1000.0_wp
