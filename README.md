@@ -111,8 +111,13 @@ program vanpol
   x1 = 100.0_wp
 ! integrate system of ODEs
   call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,solout=out,stats=stats,hmax=hmax)
-  print '(A,3(I0,1X))', 'accepted rejected nfev: ', stats(1), stats(2), stats(3)
-  print '(A,3(I0,1X))', 'njev nlu nsol: ', stats(4), stats(5), stats(6)
+  print '(A)', 'Solver statistics'
+  print '(A,I0)', '  nacc: ', stats(1)
+  print '(A,I0)', '  nrej: ', stats(2)
+  print '(A,I0)', '  nfev: ', stats(3)
+  print '(A,I0)', '  njev: ', stats(4)
+  print '(A,I0)', '  nlu:  ', stats(5)
+  print '(A,I0)', '  nsol: ', stats(6)
 
 contains
 

@@ -50,26 +50,28 @@ program ode_stats
 
   call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,stats=stats)
 
-  if (stats(3) /= fun_calls .or. stats(4) /= jac_calls) then
-    print '(A,6(I0,1X),A,2(I0,1X))', &
-      'stats mismatch [nacc nrej nfev njev nlu nsol]: ', stats, &
-      ' callback counts [fun jac]: ', fun_calls, jac_calls
-    error stop 1
-  end if
+  associate(nacc => stats(1), nrej => stats(2), nfev => stats(3), njev => stats(4), nlu => stats(5), nsol => stats(6))
+    if (nfev /= fun_calls .or. njev /= jac_calls) then
+      print '(A,6(I0,1X),A,2(I0,1X))', &
+        'stats mismatch [nacc nrej nfev njev nlu nsol]: ', stats, &
+        ' callback counts [fun jac]: ', fun_calls, jac_calls
+      error stop 1
+    end if
 
-  if (stats(5) <= 0) then
-    print '(A,6(I0,1X))', 'expected positive nlu in stats [nacc nrej nfev njev nlu nsol], got: ', stats
-    error stop 1
-  end if
+    if (nlu <= 0) then
+      print '(A,6(I0,1X))', 'expected positive nlu in stats [nacc nrej nfev njev nlu nsol], got: ', stats
+      error stop 1
+    end if
 
-  if (stats(1) <= 0 .or. stats(2) < 0) then
-    print '(A,6(I0,1X))', 'expected nonnegative step counters [nacc nrej nfev njev nlu nsol], got: ', stats
-    error stop 1
-  end if
+    if (nacc <= 0 .or. nrej < 0) then
+      print '(A,6(I0,1X))', 'expected nonnegative step counters [nacc nrej nfev njev nlu nsol], got: ', stats
+      error stop 1
+    end if
 
-  if (stats(6) < stats(5)) then
-    print '(A,6(I0,1X))', 'expected nsol>=nlu in stats [nacc nrej nfev njev nlu nsol], got: ', stats
-    error stop 1
-  end if
+    if (nsol < nlu) then
+      print '(A,6(I0,1X))', 'expected nsol>=nlu in stats [nacc nrej nfev njev nlu nsol], got: ', stats
+      error stop 1
+    end if
+  end associate
 
 end program
