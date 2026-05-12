@@ -70,7 +70,7 @@ contains
     real(wp), intent(out) :: cpu_time_seconds
     character(len=*), intent(in), optional :: solution_filename
 
-    integer :: ios
+    integer :: ios, idid
     real(wp), parameter :: min_cpu_time = 1.0e-12_wp
     real(wp) :: cpu_start, cpu_end, h0, x
     logical :: write_solution
@@ -87,8 +87,9 @@ contains
     end if
 
     call cpu_time(cpu_start)
-    call stiff3(n, fun, x, y, x1, jac, h0, eps, w, solout=output_solution, stats=stats)
+    call stiff3(n, fun, x, y, x1, jac, h0, eps, w, idid, solout=output_solution, stats=stats)
     call cpu_time(cpu_end)
+    if (idid /= 0) error stop 'stiff3 failed in oregonator example'
     cpu_time_seconds = max(min_cpu_time, cpu_end - cpu_start)
 
     if (write_solution) then

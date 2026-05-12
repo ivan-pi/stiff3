@@ -15,6 +15,7 @@ This repository provides a heavily refactored version of the original implementa
 
 - Third-order Rosenbrock-type (semi-implicit Runge-Kutta) integrator suitable for stiff ODE systems
 - Adaptive stepsize control with error tolerance per component
+- Required integer exit flag (`idid`) reporting success and early-exit conditions
 - Optional maximum absolute half-step size (`hmax`) to cap step growth
 - Optional runtime statistics output: successful steps (`nacc`), rejected steps (`nrej`), rhs evaluations (`nfev`), Jacobian evaluations (`njev`), LU decompositions (`nlu`), and linear-system solves (`nsol`)
 - Optional explicit workspace interface via `stiff3(..., rwork, iwork, ...)` for caller-managed memory
@@ -103,7 +104,7 @@ program vanpol
   integer, parameter :: n = 2
   real(wp), parameter :: mu = 10.0_wp
   real(wp) :: y(n), w(n), x0, x, x1, h0, eps, hmax
-  integer :: stats(6)
+  integer :: idid, stats(6)
 
 ! initial value
   y = [1.0_wp, 1.0_wp]
@@ -119,8 +120,9 @@ program vanpol
   x = x0
   x1 = 100.0_wp
 ! integrate system of ODEs
-  call stiff3(n,fun,x,y,x1,jac,h0,eps,w,solout=out,stats=stats,hmax=hmax)
-! on successful exit, x == x1
+  call stiff3(n,fun,x,y,x1,jac,h0,eps,w,idid,solout=out,stats=stats,hmax=hmax)
+  if (idid /= 0) error stop 'stiff3 failed'
+! on successful exit, idid == 0 and x == x1
   print '(A)', 'Solver statistics'
   print '(A,I0)', '  nacc: ', stats(1)
   print '(A,I0)', '  nrej: ', stats(2)
@@ -180,7 +182,17 @@ The two tolerance parameters `eps` and `w` together control how accurately the s
 
 A reasonable first choice is `eps = 1.0e-4` with all `w(i) = 1.0`, which requests roughly four significant digits from every component.
 
-For interoperability scenarios where the caller manages memory allocation (e.g. language bindings), `stiff3` also provides an overload with explicit work arrays: `rwork` of size `n*(7 + 2*n)` and `iwork` of size `n`.
+For interoperability scenarios where the caller manages memory allocation (e.g. language bindings), `stiff3` also provides an overload with explicit work arrays: `rwork` of size `n*(7 + 2*n)` and `iwork` of size `n`. The required `idid` argument appears before the optional arguments in both overloads:
+
+- `call stiff3(n, fun, x, y, x1, jac, h0, eps, w, idid, [solout=...], [stats=...], [hmax=...])`
+- `call stiff3(n, fun, x, y, x1, jac, h0, eps, w, rwork, iwork, idid, [solout=...], [stats=...], [hmax=...])`
+
+The integer exit flag `idid` reports solver status:
+
+- `0` — successful completion at `x1`
+- `-1` — LU factorization failed because the Jacobian system matrix was singular
+- `-2` — integration interrupted by the user `solout` callback (`irtrn < 0`)
+- `-3` — step-size underflow occurred during bisection (`abs(h) <= spacing(x_current)`)
 
 When using this explicit-workspace overload together with `solout`, accepted-step dense output is available through the generic interface `stiff3_interp`:
 

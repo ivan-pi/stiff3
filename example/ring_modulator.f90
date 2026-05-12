@@ -76,13 +76,15 @@ contains
 
     real(wp), parameter :: min_cpu_time = 1.0e-12_wp
     real(wp) :: h0, cpu_start, cpu_end, x
+    integer :: idid
 
     y = y0
     x = x0
     h0 = initial_step_scale*eps
     call cpu_time(cpu_start)
-    call stiff3(n, fun, x, y, x1, jac, h0, eps, w, stats=stats)
+    call stiff3(n, fun, x, y, x1, jac, h0, eps, w, idid, stats=stats)
     call cpu_time(cpu_end)
+    if (idid /= 0) error stop 'stiff3 failed in ring_modulator example'
     if (present(err)) err = max_relative_error(y(1:nphys), yref)
     if (present(cpu_time_seconds)) cpu_time_seconds = max(min_cpu_time, cpu_end - cpu_start)
   end subroutine

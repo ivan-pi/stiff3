@@ -8,6 +8,7 @@ program predator_prey
   real(wp), parameter :: alpha = 1.1_wp, beta = 0.4_wp
   real(wp), parameter :: delta = 0.1_wp, gamma = 0.4_wp
   real(wp) :: y(n), w(n), x0, x1, h0, eps
+  integer :: idid
 
 ! initial value
   y = [10.0_wp, 5.0_wp]
@@ -20,7 +21,8 @@ program predator_prey
   x0 = 0.0_wp
   x1 = 40.0_wp
 ! integrate system of ODEs
-  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,solout=out)
+  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,idid,solout=out)
+  if (idid /= 0) error stop 'stiff3 failed in predator_prey example'
 
 contains
 

@@ -65,13 +65,15 @@ contains
     real(wp), intent(out), optional :: err, elapsed
 
     real(wp) :: h0, t0, t1, x
+    integer :: idid
 
     y = y0
     x = x0
     h0 = h0_initial
     call cpu_time(t0)
-    call stiff3(n, fun, x, y, x1, jac, h0, eps, w, stats=stats)
+    call stiff3(n, fun, x, y, x1, jac, h0, eps, w, idid, stats=stats)
     call cpu_time(t1)
+    if (idid /= 0) error stop 'stiff3 failed in e5_chemical example'
     if (present(err)) err = max_relative_error(y, yref)
     if (present(elapsed)) elapsed = max(t1 - t0, 0.0_wp)
   end subroutine
