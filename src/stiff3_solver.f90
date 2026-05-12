@@ -243,6 +243,8 @@ contains
     nsol = 0
     have_f = .false.
     idid = 0
+    ! Initialize rollback work arrays so early physical-reject handling
+    ! (before the first Jacobian snapshot) never restores undefined values.
     f = 0.0_wp
     fold = 0.0_wp
     df = 0.0_wp

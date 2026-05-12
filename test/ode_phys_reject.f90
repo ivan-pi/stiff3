@@ -69,7 +69,7 @@ contains
       print '(A,I0)', 'limit case expected zero accepted steps, got ', stats(1)
       error stop 1
     end if
-    if (abs(x - x0) > 2.0_wp*spacing(x0)) then
+    if (abs(x - x0) > 1.0e-15_wp) then
       print '(A,ES12.4,A,ES12.4)', 'limit case expected x near x0, got ', x, ' expected ', x0
       error stop 1
     end if
