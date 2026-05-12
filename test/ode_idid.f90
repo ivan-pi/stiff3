@@ -41,10 +41,11 @@ contains
     end if
   end subroutine
 
-  subroutine fun_underflow(n,y,f)
+  subroutine fun_underflow(n,y,f, ires)
     integer, intent(in) :: n
     real(wp), intent(in) :: y(n)
     real(wp), intent(inout) :: f(n)
+    integer, intent(inout) :: ires
     f(1) = omega*y(2)
     f(2) = -omega*y(1)
   end subroutine

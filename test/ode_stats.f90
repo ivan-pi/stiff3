@@ -10,10 +10,11 @@ module ode_stats_problem
 
 contains
 
-  subroutine fun(n,y,f)
+  subroutine fun(n,y,f, ires)
     integer, intent(in) :: n
     real(wp), intent(in) :: y(n)
     real(wp), intent(inout) :: f(n)
+    integer, intent(inout) :: ires
     fun_calls = fun_calls + 1
     f(1) = -decay_rate*y(1)
   end subroutine

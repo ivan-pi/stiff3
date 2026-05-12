@@ -29,11 +29,13 @@ module stiff3_solver
     !> Function to evaluate the right-hand side of a system of ODEs.
     !> It is assumed the system of ODEs is autonomous, meaning that
     !> the independent variable x, does not appear explicitly.
-    subroutine rhs_sub(n,y,f)
+    subroutine rhs_sub(n,y,f,ires)
       import wp
       integer, intent(in) :: n
       real(wp), intent(in) :: y(n)
       real(wp), intent(inout) :: f(n)
+      integer, intent(inout) :: ires
+        !! If set < 0 by the callback, integration is interrupted
     end subroutine
 
     !> User supplied subprogram for evaluation of the Jacobian.
@@ -105,7 +107,7 @@ contains
       !! Tolerance parameters.
     integer, intent(out) :: idid
       !! Solver exit flag: `0` success, `-1` LU factorization failure,
-      !! `-2` user interrupt from `solout`, `-3` step-size underflow.
+      !! `-2` user interrupt from `fun`/`solout`, `-3` step-size underflow.
     real(wp), intent(inout) :: y(n)
       !! Vector of dependent variables at `x`. On exit `y` is the vector of
       !! dependent variables at the returned `x`.
@@ -162,7 +164,7 @@ contains
       !! Integer workspace of size `n`.
     integer, intent(out) :: idid
       !! Solver exit flag: `0` success, `-1` LU factorization failure,
-      !! `-2` user interrupt from `solout`, `-3` step-size underflow.
+      !! `-2` user interrupt from `fun`/`solout`, `-3` step-size underflow.
     procedure(output_sub), optional :: solout
       !! User supplied subprogram for output.
     integer, intent(out), optional :: stats(6)
@@ -210,7 +212,7 @@ contains
     integer, intent(out), optional :: stats(6)
     real(wp), intent(in), optional :: hmax
 
-    integer :: icon, iha, i, j, irtrn, lu_info
+    integer :: icon, iha, i, j, ires, irtrn, lu_info
     integer :: nfev, njev, nlu, nacc, nrej, nsol
     real(wp) :: x_current, xold, h, e, es, q, qa, hmax_used
     logical :: have_f
@@ -272,7 +274,12 @@ contains
 
       if (.not. have_f) then
         ! On the first accepted step there is no saved endpoint rhs yet.
-        call fun(n,y,f)
+        ires = 0
+        call fun(n,y,f,ires)
+        if (ires < 0) then
+          call return_user_interrupt(.false.)
+          return
+        end if
         nfev = nfev + 1
       end if
       call jac(n,y,df)
@@ -290,7 +297,11 @@ contains
 
     ! perform full integration step
 
-      call sirk3(n,fun,ip,f,y,yk1,yk2,df,2*h,nfev,nlu,nsol,lu_info)
+      call sirk3(n,fun,ip,f,y,yk1,yk2,df,2*h,nfev,nlu,nsol,lu_info,ires)
+      if (ires < 0) then
+        call return_user_interrupt(.true.)
+        return
+      end if
       if (lu_info /= 0) then
         idid = -1
         h0 = h
@@ -315,7 +326,11 @@ contains
       inner: do
         iha = iha + 1
 
-        call sirk3(n,fun,ip,f,y,yk1,yk2,df,h,nfev,nlu,nsol,lu_info)
+        call sirk3(n,fun,ip,f,y,yk1,yk2,df,h,nfev,nlu,nsol,lu_info,ires)
+        if (ires < 0) then
+          call return_user_interrupt(.true.)
+          return
+        end if
         if (lu_info /= 0) then
           idid = -1
           y = yold
@@ -326,14 +341,23 @@ contains
           if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
           return
         end if
-        call fun(n,y,f)
+        ires = 0
+        call fun(n,y,f,ires)
+        if (ires < 0) then
+          call return_user_interrupt(.true.)
+          return
+        end if
         nfev = nfev + 1
         call jac(n,y,df)
         njev = njev + 1
 
         yold1 = y
 
-        call sirk3(n,fun,ip,f,y,yk1,yk2,df,h,nfev,nlu,nsol,lu_info)
+        call sirk3(n,fun,ip,f,y,yk1,yk2,df,h,nfev,nlu,nsol,lu_info,ires)
+        if (ires < 0) then
+          call return_user_interrupt(.true.)
+          return
+        end if
         if (lu_info /= 0) then
           idid = -1
           y = yold
@@ -396,7 +420,12 @@ contains
 
     ! evaluate rhs at the accepted-step end so it is ready for the next step
     ! and available in the explicit-workspace path through rwork(5*n+1:6*n)
-      call fun(n,y,f)
+      ires = 0
+      call fun(n,y,f,ires)
+      if (ires < 0) then
+        call return_user_interrupt(.false.)
+        return
+      end if
       nfev = nfev + 1
       have_f = .true.
 
@@ -430,6 +459,22 @@ contains
       end if
 
     end do outer
+
+  contains
+
+    subroutine return_user_interrupt(restore_state)
+      logical, intent(in) :: restore_state
+
+      idid = -2
+      if (restore_state) then
+        y = yold
+        f = fold
+        df = dfold
+      end if
+      h0 = h
+      x = x_current
+      if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
+    end subroutine
 
   end subroutine
 
@@ -513,7 +558,7 @@ contains
 
   !> Single-step semi-implicit integration
   !
-  subroutine sirk3(n,fun,ipiv,f,y,yk1,yk2,df,h,nfev,nlu,nsol,info)
+  subroutine sirk3(n,fun,ipiv,f,y,yk1,yk2,df,h,nfev,nlu,nsol,info,ires)
     integer, intent(in) :: n
       !! Size of the system of ODEs
     procedure(rhs_sub) :: fun
@@ -540,6 +585,8 @@ contains
       !! Number of linear-system solves (back substitutions)
     integer, intent(out) :: info
       !! LU factorization status from LAPACK `*getrf`
+    integer, intent(out) :: ires
+      !! User interrupt status from `fun`
 
     integer :: i
 
@@ -548,6 +595,8 @@ contains
     real(wp), parameter :: r2 =  0.8349304838526377_wp
     real(wp), parameter :: r3 = -0.6302020887244523_wp
     real(wp), parameter :: r4 = -0.2423378912600452_wp
+
+    ires = 0
 
     !
     ! form matrix (I - h a J)
@@ -570,7 +619,8 @@ contains
       yk1(i) = h*f(i)
       yk2(i) = y(i) + 0.75_wp * yk1(i)
     end do
-    call fun(n,yk2,f)
+    call fun(n,yk2,f,ires)
+    if (ires < 0) return
     nfev = nfev + 1
     call back(df,f,ipiv)
     nsol = nsol + 1

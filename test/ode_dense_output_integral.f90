@@ -67,10 +67,11 @@ program ode_dense_output_integral
 
 contains
 
-  subroutine fun(n,y,f)
+  subroutine fun(n,y,f, ires)
     integer, intent(in) :: n
     real(wp), intent(in) :: y(n)
     real(wp), intent(inout) :: f(n)
+    integer, intent(inout) :: ires
     f(1) = -y(1)
     f(2) = -50.0_wp*y(2)
   end subroutine
