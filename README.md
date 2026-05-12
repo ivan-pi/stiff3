@@ -102,7 +102,7 @@ program vanpol
 
   integer, parameter :: n = 2
   real(wp), parameter :: mu = 10.0_wp
-  real(wp) :: y(n), w(n), x, x1, h0, eps, hmax
+  real(wp) :: y(n), w(n), x0, x, x1, h0, eps, hmax
   integer :: stats(6)
 
 ! initial value
@@ -115,7 +115,8 @@ program vanpol
 ! optional maximum absolute half-step size (0 means default abs(x1-x0))
   hmax = 0.0_wp
 ! time interval
-  x = 0.0_wp
+  x0 = 0.0_wp
+  x = x0
   x1 = 100.0_wp
 ! integrate system of ODEs
   call stiff3(n,fun,x,y,x1,jac,h0,eps,w,solout=out,stats=stats,hmax=hmax)
@@ -188,7 +189,7 @@ When using this explicit-workspace overload together with `solout`, accepted-ste
 
 These routines evaluate a cubic Hermite interpolant over the current accepted step `[xold, x]`. They are only valid inside the active `solout` callback of `stiff3_work`, and `xeval` must lie within the current accepted step.
 
-You can also optionally pass `hmax` to limit the absolute half-step size used by the adaptive controller. If `hmax` is omitted or set to `0`, the default is `abs(x1-x)` using the input value of `x`. If provided and positive, the solver uses `min(hmax, abs(x1-x))`. Negative values are rejected.
+You can also optionally pass `hmax` to limit the absolute half-step size used by the adaptive controller. If `hmax` is omitted or set to `0`, the default is `abs(x1-x)` using the initial value of `x` at the start of integration. If provided and positive, the solver uses `min(hmax, abs(x1-x))`. Negative values are rejected.
 
 **How the tolerance is applied:** after each step the solver estimates the local error in each component and checks:
 
