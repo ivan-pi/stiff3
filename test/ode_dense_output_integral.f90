@@ -12,7 +12,7 @@ program ode_dense_output_integral
   real(wp), parameter :: tol_match = 2.0e-4_wp
   real(wp), parameter :: tol_exact = 2.0e-4_wp
   real(wp), parameter :: tol_x = 1.0e-12_wp
-  real(wp) :: y(n), w(n), h0, eps
+  real(wp) :: y(n), w(n), h0, eps, x
   real(wp) :: rwork(n*(7 + 2*n))
   integer :: iwork(n)
   integer :: nsteps_checked
@@ -33,7 +33,8 @@ program ode_dense_output_integral
   yfixed_prev = y(1)
   xfixed_next = x0 + dx_fixed
 
-  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,rwork,iwork,solout=accumulate_integrals,hmax=hmax)
+  x = x0
+  call stiff3(n,fun,x,y,x1,jac,h0,eps,w,rwork,iwork,solout=accumulate_integrals,hmax=hmax)
 
   if (nsteps_checked < 2) then
     print '(A,I0)', 'expected integral test to exercise multiple steps, got ', nsteps_checked
@@ -42,6 +43,11 @@ program ode_dense_output_integral
 
   if (abs(xfixed_prev - x1) > tol_x) then
     print '(A,ES12.4,A,ES12.4)', 'fixed-grid integration stopped at ', xfixed_prev, ' expected ', x1
+    error stop 1
+  end if
+
+  if (abs(x - x1) > tol_x) then
+    print '(A,ES12.4,A,ES12.4)', 'solver x did not end at x1: ', x, ' expected ', x1
     error stop 1
   end if
 

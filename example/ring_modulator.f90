@@ -75,12 +75,13 @@ contains
     real(wp), intent(out), optional :: err, cpu_time_seconds
 
     real(wp), parameter :: min_cpu_time = 1.0e-12_wp
-    real(wp) :: h0, cpu_start, cpu_end
+    real(wp) :: h0, cpu_start, cpu_end, x
 
     y = y0
+    x = x0
     h0 = initial_step_scale*eps
     call cpu_time(cpu_start)
-    call stiff3(n, fun, x0, y, x1, jac, h0, eps, w, stats=stats)
+    call stiff3(n, fun, x, y, x1, jac, h0, eps, w, stats=stats)
     call cpu_time(cpu_end)
     if (present(err)) err = max_relative_error(y(1:nphys), yref)
     if (present(cpu_time_seconds)) cpu_time_seconds = max(min_cpu_time, cpu_end - cpu_start)

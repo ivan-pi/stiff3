@@ -72,10 +72,11 @@ contains
 
     integer :: ios
     real(wp), parameter :: min_cpu_time = 1.0e-12_wp
-    real(wp) :: cpu_start, cpu_end, h0
+    real(wp) :: cpu_start, cpu_end, h0, x
     logical :: write_solution
 
     y = y0
+    x = x0
     h0 = h0_initial
     write_solution = present(solution_filename)
     if (write_solution) then
@@ -86,7 +87,7 @@ contains
     end if
 
     call cpu_time(cpu_start)
-    call stiff3(n, fun, x0, y, x1, jac, h0, eps, w, solout=output_solution, stats=stats)
+    call stiff3(n, fun, x, y, x1, jac, h0, eps, w, solout=output_solution, stats=stats)
     call cpu_time(cpu_end)
     cpu_time_seconds = max(min_cpu_time, cpu_end - cpu_start)
 
