@@ -107,6 +107,8 @@ program ode_hmax
   h0 = h0_start
   x_last_rhs_accepted = x0
   y_last_rhs_accepted = y_rhs_stop
+  ! Chosen so the first accepted step completes, but the next step triggers
+  ! inside an RHS evaluation and should therefore return the prior accepted state.
   rhs_stop_threshold = 0.75_wp
   enable_rhs_interrupt = .true.
   x = x0

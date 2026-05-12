@@ -277,10 +277,7 @@ contains
         ires = 0
         call fun(n,y,f,ires)
         if (ires < 0) then
-          idid = -2
-          h0 = h
-          x = x_current
-          if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
+          call return_user_interrupt(.false.)
           return
         end if
         nfev = nfev + 1
@@ -302,13 +299,7 @@ contains
 
       call sirk3(n,fun,ip,f,y,yk1,yk2,df,2*h,nfev,nlu,nsol,lu_info,ires)
       if (ires < 0) then
-        idid = -2
-        y = yold
-        f = fold
-        df = dfold
-        h0 = h
-        x = x_current
-        if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
+        call return_user_interrupt(.true.)
         return
       end if
       if (lu_info /= 0) then
@@ -337,13 +328,7 @@ contains
 
         call sirk3(n,fun,ip,f,y,yk1,yk2,df,h,nfev,nlu,nsol,lu_info,ires)
         if (ires < 0) then
-          idid = -2
-          y = yold
-          f = fold
-          df = dfold
-          h0 = h
-          x = x_current
-          if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
+          call return_user_interrupt(.true.)
           return
         end if
         if (lu_info /= 0) then
@@ -359,13 +344,7 @@ contains
         ires = 0
         call fun(n,y,f,ires)
         if (ires < 0) then
-          idid = -2
-          y = yold
-          f = fold
-          df = dfold
-          h0 = h
-          x = x_current
-          if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
+          call return_user_interrupt(.true.)
           return
         end if
         nfev = nfev + 1
@@ -376,13 +355,7 @@ contains
 
         call sirk3(n,fun,ip,f,y,yk1,yk2,df,h,nfev,nlu,nsol,lu_info,ires)
         if (ires < 0) then
-          idid = -2
-          y = yold
-          f = fold
-          df = dfold
-          h0 = h
-          x = x_current
-          if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
+          call return_user_interrupt(.true.)
           return
         end if
         if (lu_info /= 0) then
@@ -450,10 +423,7 @@ contains
       ires = 0
       call fun(n,y,f,ires)
       if (ires < 0) then
-        idid = -2
-        h0 = h
-        x = x_current
-        if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
+        call return_user_interrupt(.false.)
         return
       end if
       nfev = nfev + 1
@@ -489,6 +459,22 @@ contains
       end if
 
     end do outer
+
+  contains
+
+    subroutine return_user_interrupt(restore_state)
+      logical, intent(in) :: restore_state
+
+      idid = -2
+      if (restore_state) then
+        y = yold
+        f = fold
+        df = dfold
+      end if
+      h0 = h
+      x = x_current
+      if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
+    end subroutine
 
   end subroutine
 

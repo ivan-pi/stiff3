@@ -111,7 +111,6 @@ contains
     integer, intent(in) :: n
     real(wp), intent(in) :: y(n)
     real(wp), intent(inout) :: f(n)
-
     integer, intent(inout) :: ires
     f(1) = -1.71_wp*y(1) + 0.43_wp*y(2) + 8.32_wp*y(3) + 0.0007_wp
     f(2) = 1.71_wp*y(1) - 8.75_wp*y(2)

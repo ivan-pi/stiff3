@@ -119,7 +119,6 @@ contains
     integer, intent(in) :: n
     real(wp), intent(in) :: y(n)
     real(wp), intent(inout) :: f(n)
-
     integer, intent(inout) :: ires
     real(wp), parameter :: c = 1.6e-8_wp
     real(wp), parameter :: cs = 2.0e-12_wp
