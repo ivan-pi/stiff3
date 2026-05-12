@@ -36,10 +36,11 @@ program pendant_drop
 
 contains
 
-  subroutine fun(n,y,f)
+  subroutine fun(n,y,f, ires)
     integer, intent(in) :: n
     real(wp), intent(in) :: y(n)
     real(wp), intent(inout) :: f(n)
+    integer, intent(inout) :: ires
     f(1) = pL - drho*y(3) - sin(y(1))/y(2)
     f(2) = cos(y(1))
     f(3) = sin(y(1))

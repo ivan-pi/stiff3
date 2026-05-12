@@ -133,10 +133,11 @@ program vanpol
 
 contains
 
-  subroutine fun(n,y,f)
+  subroutine fun(n,y,f, ires)
     integer, intent(in) :: n
     real(wp), intent(in) :: y(n)
     real(wp), intent(inout) :: f(n)
+    integer, intent(inout) :: ires
     f(1) = y(2)
     f(2) = mu*(1.0_wp - y(1)**2)*y(2) - y(1)
   end subroutine
@@ -191,7 +192,7 @@ The integer exit flag `idid` reports solver status:
 
 - `0` — successful completion at `x1`
 - `-1` — LU factorization failed because the Jacobian system matrix was singular
-- `-2` — integration interrupted by the user `solout` callback (`irtrn < 0`)
+- `-2` — integration interrupted by a user callback (`ires < 0` in `fun` or `irtrn < 0` in `solout`)
 - `-3` — step-size underflow occurred during bisection (`abs(h) <= spacing(x_current)`)
 
 When using this explicit-workspace overload together with `solout`, accepted-step dense output is available through the generic interface `stiff3_interp`:

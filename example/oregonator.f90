@@ -253,11 +253,12 @@ contains
       (value - ymin)*(real(height,wp) - top - bottom)/(ymax - ymin)
   end function
 
-  subroutine fun(n, y, f)
+  subroutine fun(n, y, f, ires)
     integer, intent(in) :: n
     real(wp), intent(in) :: y(n)
     real(wp), intent(inout) :: f(n)
 
+    integer, intent(inout) :: ires
     f(1) = 77.27_wp*(y(2) + y(1)*(1.0_wp - 8.375e-6_wp*y(1) - y(2)))
     f(2) = (y(3) - (1.0_wp + y(1))*y(2))/77.27_wp
     f(3) = 0.161_wp*(y(1) - y(3))

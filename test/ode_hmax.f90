@@ -9,15 +9,17 @@ program ode_hmax
   real(wp), parameter :: tol_x = 1.0e-12_wp
   real(wp), parameter :: hmax_cap = 0.1_wp
   real(wp), parameter :: h0_start = 0.5_wp
-  real(wp) :: y_default(n), y_zero(n), y_capped(n), y_stop(n), w(n), x0, x1, h0, eps_test, x
-  real(wp) :: max_h_seen, x_last_accepted
-  integer :: stats_default(6), stats_zero(6), stats_capped(6), stats_stop(6)
-  integer :: idid_default, idid_zero, idid_capped, idid_stop
+  real(wp) :: y_default(n), y_zero(n), y_capped(n), y_stop(n), y_rhs_stop(n), w(n), x0, x1, h0, eps_test, x
+  real(wp) :: max_h_seen, x_last_accepted, x_last_rhs_accepted, y_last_rhs_accepted(n), rhs_stop_threshold
+  integer :: stats_default(6), stats_zero(6), stats_capped(6), stats_stop(6), stats_rhs_stop(6)
+  integer :: idid_default, idid_zero, idid_capped, idid_stop, idid_rhs_stop
+  logical :: enable_rhs_interrupt
 
   w = 1.0_wp
   x0 = 0.0_wp
   x1 = 1.0_wp
   eps_test = 1.0e-4_wp
+  enable_rhs_interrupt = .false.
 
   y_default = [1.0_wp]
   h0 = h0_start
@@ -101,13 +103,41 @@ program ode_hmax
     error stop 1
   end if
 
+  y_rhs_stop = [1.0_wp]
+  h0 = h0_start
+  x_last_rhs_accepted = x0
+  y_last_rhs_accepted = y_rhs_stop
+  rhs_stop_threshold = 0.75_wp
+  enable_rhs_interrupt = .true.
+  x = x0
+  call stiff3(n,fun,x,y_rhs_stop,x1,jac,h0,eps_test,w,idid_rhs_stop,solout=out_rhs_track,stats=stats_rhs_stop,hmax=hmax_cap)
+  enable_rhs_interrupt = .false.
+  if (idid_rhs_stop /= -2) then
+    print '(A,I0)', 'rhs interrupt run expected idid=-2, got ', idid_rhs_stop
+    error stop 1
+  end if
+  if (abs(x - x_last_rhs_accepted) > tol_x) then
+    print '(A,ES12.4,A,ES12.4)', 'rhs interrupt run x not last accepted step: ', x, ' expected ', x_last_rhs_accepted
+    error stop 1
+  end if
+  if (abs(y_rhs_stop(1) - y_last_rhs_accepted(1)) > tol) then
+    print '(A,ES12.4,A,ES12.4)', 'rhs interrupt run y not last accepted value: ', y_rhs_stop(1), ' expected ', y_last_rhs_accepted(1)
+    error stop 1
+  end if
+  if (x <= x0 + tol_x) then
+    print '(A,ES12.4,A,ES12.4)', 'rhs interrupt run x too close to start: ', x, ' start ', x0
+    error stop 1
+  end if
+
 contains
 
-  subroutine fun(n,y,f)
+  subroutine fun(n,y,f, ires)
     integer, intent(in) :: n
     real(wp), intent(in) :: y(n)
     real(wp), intent(inout) :: f(n)
+    integer, intent(inout) :: ires
     f(1) = -y(1)
+    if (enable_rhs_interrupt .and. y(1) < rhs_stop_threshold) ires = -1
   end subroutine
 
   subroutine jac(n,y,df)
@@ -138,6 +168,18 @@ contains
     integer, intent(inout) :: irtrn
     x_last_accepted = x
     if (nr >= 3) irtrn = -1
+  end subroutine
+
+  subroutine out_rhs_track(nr,xold,x,y,iha,qa,irtrn)
+    integer, intent(in) :: nr
+    real(wp), intent(in) :: xold
+    real(wp), intent(in) :: x
+    real(wp), intent(in) :: y(:)
+    integer, intent(in) :: iha
+    real(wp), intent(in) :: qa
+    integer, intent(inout) :: irtrn
+    x_last_rhs_accepted = x
+    y_last_rhs_accepted = y
   end subroutine
 
 end program

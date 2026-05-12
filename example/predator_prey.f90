@@ -26,10 +26,11 @@ program predator_prey
 
 contains
 
-  subroutine fun(n,y,f)
+  subroutine fun(n,y,f, ires)
     integer, intent(in) :: n
     real(wp), intent(in) :: y(n)
     real(wp), intent(inout) :: f(n)
+    integer, intent(inout) :: ires
     f(1) = alpha*y(1) - beta*y(1)*y(2)
     f(2) = delta*y(1)*y(2) - gamma*y(2)
   end subroutine

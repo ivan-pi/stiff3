@@ -29,11 +29,12 @@ program three_equation_system
 
 contains
 
-  subroutine fun(n,y,f)
+  subroutine fun(n,y,f, ires)
     integer, intent(in) :: n
     real(wp), intent(in) :: y(n)
     real(wp), intent(inout) :: f(n)
 
+    integer, intent(inout) :: ires
     f(1) = -k1*y(1) - k2*y(1)*y(3)
     f(2) = -k3*y(2)*y(3)
     f(3) = -k1*y(1) - k2*y(1)*y(3) - k3*y(2)*y(3)
