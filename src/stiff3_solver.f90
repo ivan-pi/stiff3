@@ -35,7 +35,8 @@ module stiff3_solver
       real(wp), intent(in) :: y(n)
       real(wp), intent(inout) :: f(n)
       integer, intent(inout) :: ires
-        !! If set < 0 by the callback, integration is interrupted
+        !! Callback status: `0` continue, `-1` reject current step and retry
+        !! with smaller step, `< -1` interrupt integration (`idid = -2`)
     end subroutine
 
     !> User supplied subprogram for evaluation of the Jacobian.
@@ -107,7 +108,8 @@ contains
       !! Tolerance parameters.
     integer, intent(out) :: idid
       !! Solver exit flag: `0` success, `-1` LU factorization failure,
-      !! `-2` user interrupt from `fun`/`solout`, `-3` step-size underflow.
+      !! `-2` user interrupt from `fun`/`solout`, `-3` step-size underflow,
+      !! `-4` too many physical rejections (`ires = -1`).
     real(wp), intent(inout) :: y(n)
       !! Vector of dependent variables at `x`. On exit `y` is the vector of
       !! dependent variables at the returned `x`.
@@ -164,7 +166,8 @@ contains
       !! Integer workspace of size `n`.
     integer, intent(out) :: idid
       !! Solver exit flag: `0` success, `-1` LU factorization failure,
-      !! `-2` user interrupt from `fun`/`solout`, `-3` step-size underflow.
+      !! `-2` user interrupt from `fun`/`solout`, `-3` step-size underflow,
+      !! `-4` too many physical rejections (`ires = -1`).
     procedure(output_sub), optional :: solout
       !! User supplied subprogram for output.
     integer, intent(out), optional :: stats(6)
@@ -212,10 +215,10 @@ contains
     integer, intent(out), optional :: stats(6)
     real(wp), intent(in), optional :: hmax
 
-    integer :: icon, iha, i, j, ires, irtrn, lu_info
+    integer :: icon, iha, i, j, ires, irtrn, lu_info, nphys
     integer :: nfev, njev, nlu, nacc, nrej, nsol
     real(wp) :: x_current, xold, h, e, es, q, qa, hmax_used
-    logical :: have_f
+    logical :: have_f, reject_limit_hit, have_f_step
 
   ! icon = 0 except for last step which ends exactly at x1
     icon = 0
@@ -240,6 +243,10 @@ contains
     nsol = 0
     have_f = .false.
     idid = 0
+    f = 0.0_wp
+    fold = 0.0_wp
+    df = 0.0_wp
+    dfold = 0.0_wp
 
     if (present(solout)) then
       irtrn = 0
@@ -254,139 +261,87 @@ contains
     end if
 
     outer: do
+      nphys = 0
+      retry_step: do
+        have_f_step = have_f
 
     ! last step - or first step longer than interval
 
-      if ((x_current + 2.0_wp*h >= xend) .and. ((xend - x_current)/2.0_wp <= hmax_used)) then
-        h = (xend - x_current)/2.0_wp
-        icon = 1
-      end if
+        if ((x_current + 2.0_wp*h >= xend) .and. ((xend - x_current)/2.0_wp <= hmax_used)) then
+          h = (xend - x_current)/2.0_wp
+          icon = 1
+        end if
 
     ! other steps - limit to one quarter of remaining interval
 
-      if ((icon == 0) .and. (x_current + 4.0_wp*h > xend)) then
-        h = (xend - x_current)/4.0_wp
-      end if
+        if ((icon == 0) .and. (x_current + 4.0_wp*h > xend)) then
+          h = (xend - x_current)/4.0_wp
+        end if
 
-      h = min(h,hmax_used)
+        h = min(h,hmax_used)
+        if (abs(h) <= spacing(x_current)) then
+          idid = -3
+          h0 = h
+          x = x_current
+          if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
+          return
+        end if
+
+        ! Keep a rollback snapshot for the current step attempt.
+        yold = y
+        fold = f
+        dfold = df
 
     ! evaluate function and jacobian
 
-      if (.not. have_f) then
-        ! On the first accepted step there is no saved endpoint rhs yet.
-        ires = 0
-        call fun(n,y,f,ires)
-        if (ires < 0) then
-          call return_user_interrupt(.false.)
-          return
+        if (.not. have_f) then
+          ! On the first accepted step there is no saved endpoint rhs yet.
+          ires = 0
+          call fun(n,y,f,ires)
+          if (ires == -1) then
+            call handle_phys_reject(restore_x=.false.,reject_limit_hit=reject_limit_hit)
+            if (reject_limit_hit) return
+            cycle retry_step
+          else if (ires < -1) then
+            call return_user_interrupt(.false.)
+            return
+          end if
+          nfev = nfev + 1
         end if
-        nfev = nfev + 1
-      end if
-      call jac(n,y,df)
-      njev = njev + 1
-
-    ! keep values which are used in half-step integration
-
-      do i = 1, n
-        yold(i) = y(i)
-        fold(i) = f(i)
-        do j = 1, n
-          dfold(i,j) = df(i,j)
-        end do
-      end do
-
-    ! perform full integration step
-
-      call sirk3(n,fun,ip,f,y,yk1,yk2,df,2*h,nfev,nlu,nsol,lu_info,ires)
-      if (ires < 0) then
-        call return_user_interrupt(.true.)
-        return
-      end if
-      if (lu_info /= 0) then
-        idid = -1
-        h0 = h
-        x = x_current
-        if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
-        return
-      end if
-
-      do i = 1, n
-        ya(i) = y(i)
-        y(i) = yold(i)
-        f(i) = fold(i)
-        do j = 1, n
-          df(i,j) = dfold(i,j)
-        end do
-      end do
-
-    ! full step finished, start half-step integration
-    ! iha counts number of steplength bisections
-
-      iha = -1
-      inner: do
-        iha = iha + 1
-
-        call sirk3(n,fun,ip,f,y,yk1,yk2,df,h,nfev,nlu,nsol,lu_info,ires)
-        if (ires < 0) then
-          call return_user_interrupt(.true.)
-          return
-        end if
-        if (lu_info /= 0) then
-          idid = -1
-          y = yold
-          f = fold
-          df = dfold
-          h0 = h
-          x = x_current
-          if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
-          return
-        end if
-        ires = 0
-        call fun(n,y,f,ires)
-        if (ires < 0) then
-          call return_user_interrupt(.true.)
-          return
-        end if
-        nfev = nfev + 1
         call jac(n,y,df)
         njev = njev + 1
 
-        yold1 = y
+    ! keep values which are used in half-step integration
 
-        call sirk3(n,fun,ip,f,y,yk1,yk2,df,h,nfev,nlu,nsol,lu_info,ires)
-        if (ires < 0) then
+        do i = 1, n
+          yold(i) = y(i)
+          fold(i) = f(i)
+          do j = 1, n
+            dfold(i,j) = df(i,j)
+          end do
+        end do
+
+    ! perform full integration step
+
+        call sirk3(n,fun,ip,f,y,yk1,yk2,df,2*h,nfev,nlu,nsol,lu_info,ires)
+        if (ires == -1) then
+          call handle_phys_reject(restore_x=.false.,reject_limit_hit=reject_limit_hit)
+          if (reject_limit_hit) return
+          cycle retry_step
+        else if (ires < -1) then
           call return_user_interrupt(.true.)
           return
         end if
         if (lu_info /= 0) then
           idid = -1
-          y = yold
-          f = fold
-          df = dfold
           h0 = h
           x = x_current
           if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
           return
         end if
 
-      ! half step integration finished
-      ! compute deviation and compare with tolerance
-
-        e = 0.0_wp
         do i = 1, n
-          es = w(i)*abs(ya(i)-y(i))/(1.0_wp+abs(y(i)))
-          e = max(e,es)
-        end do
-        q = e/eps
-        qa = (4.0_wp*q)**0.25_wp
-        if (q <= 1.0_wp) then
-          exit inner
-        end if
-
-      ! deviation too large- return to half-step with smaller h
-
-        do i = 1, n
-          ya(i) = yold1(i)
+          ya(i) = y(i)
           y(i) = yold(i)
           f(i) = fold(i)
           do j = 1, n
@@ -394,40 +349,133 @@ contains
           end do
         end do
 
-        h = h/2.0_wp
-        icon = 0
-        nrej = nrej + 1
-        if (abs(h) <= spacing(x_current)) then
-          idid = -3
-          y = yold
-          f = fold
-          df = dfold
-          h0 = h
-          x = x_current
-          if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
-          return
-        end if
+    ! full step finished, start half-step integration
+    ! iha counts number of steplength bisections
 
-      end do inner
+        iha = -1
+        inner: do
+          iha = iha + 1
+
+          call sirk3(n,fun,ip,f,y,yk1,yk2,df,h,nfev,nlu,nsol,lu_info,ires)
+          if (ires == -1) then
+            call handle_phys_reject(restore_x=.false.,reject_limit_hit=reject_limit_hit)
+            if (reject_limit_hit) return
+            cycle retry_step
+          else if (ires < -1) then
+            call return_user_interrupt(.true.)
+            return
+          end if
+          if (lu_info /= 0) then
+            idid = -1
+            y = yold
+            f = fold
+            df = dfold
+            h0 = h
+            x = x_current
+            if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
+            return
+          end if
+          ires = 0
+          call fun(n,y,f,ires)
+          if (ires == -1) then
+            call handle_phys_reject(restore_x=.false.,reject_limit_hit=reject_limit_hit)
+            if (reject_limit_hit) return
+            cycle retry_step
+          else if (ires < -1) then
+            call return_user_interrupt(.true.)
+            return
+          end if
+          nfev = nfev + 1
+          call jac(n,y,df)
+          njev = njev + 1
+
+          yold1 = y
+
+          call sirk3(n,fun,ip,f,y,yk1,yk2,df,h,nfev,nlu,nsol,lu_info,ires)
+          if (ires == -1) then
+            call handle_phys_reject(restore_x=.false.,reject_limit_hit=reject_limit_hit)
+            if (reject_limit_hit) return
+            cycle retry_step
+          else if (ires < -1) then
+            call return_user_interrupt(.true.)
+            return
+          end if
+          if (lu_info /= 0) then
+            idid = -1
+            y = yold
+            f = fold
+            df = dfold
+            h0 = h
+            x = x_current
+            if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
+            return
+          end if
+
+      ! half step integration finished
+      ! compute deviation and compare with tolerance
+
+          e = 0.0_wp
+          do i = 1, n
+            es = w(i)*abs(ya(i)-y(i))/(1.0_wp+abs(y(i)))
+            e = max(e,es)
+          end do
+          q = e/eps
+          qa = (4.0_wp*q)**0.25_wp
+          if (q <= 1.0_wp) then
+            exit inner
+          end if
+
+      ! deviation too large- return to half-step with smaller h
+
+          do i = 1, n
+            ya(i) = yold1(i)
+            y(i) = yold(i)
+            f(i) = fold(i)
+            do j = 1, n
+              df(i,j) = dfold(i,j)
+            end do
+          end do
+
+          h = h/2.0_wp
+          icon = 0
+          nrej = nrej + 1
+          if (abs(h) <= spacing(x_current)) then
+            idid = -3
+            y = yold
+            f = fold
+            df = dfold
+            h0 = h
+            x = x_current
+            if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
+            return
+          end if
+
+        end do inner
 
     ! adjust y-vector
 
-      do i = 1, n
-        y(i) = y(i) + (y(i) - ya(i))/7.0_wp
-      end do
-      xold = x_current
-      x_current = x_current + 2*h
+        do i = 1, n
+          y(i) = y(i) + (y(i) - ya(i))/7.0_wp
+        end do
+        xold = x_current
+        x_current = x_current + 2*h
 
     ! evaluate rhs at the accepted-step end so it is ready for the next step
     ! and available in the explicit-workspace path through rwork(5*n+1:6*n)
-      ires = 0
-      call fun(n,y,f,ires)
-      if (ires < 0) then
-        call return_user_interrupt(.false.)
-        return
-      end if
-      nfev = nfev + 1
-      have_f = .true.
+        ires = 0
+        call fun(n,y,f,ires)
+        if (ires == -1) then
+          call handle_phys_reject(restore_x=.true.,reject_limit_hit=reject_limit_hit)
+          if (reject_limit_hit) return
+          cycle retry_step
+        else if (ires < -1) then
+          call return_user_interrupt(.false.)
+          return
+        end if
+        nfev = nfev + 1
+        have_f = .true.
+        exit retry_step
+      end do retry_step
 
     !  compute new stepsize
 
@@ -474,6 +522,32 @@ contains
       h0 = h
       x = x_current
       if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
+    end subroutine
+
+    subroutine handle_phys_reject(restore_x,reject_limit_hit)
+      logical, intent(in) :: restore_x
+      logical, intent(out) :: reject_limit_hit
+
+      y = yold
+      f = fold
+      df = dfold
+      have_f = have_f_step
+      if (restore_x) x_current = xold
+
+      h = h/2.0_wp
+      icon = 0
+      nrej = nrej + 1
+      nphys = nphys + 1
+
+      if (nphys > 10) then
+        idid = -4
+        h0 = h
+        x = x_current
+        if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
+        reject_limit_hit = .true.
+      else
+        reject_limit_hit = .false.
+      end if
     end subroutine
 
   end subroutine
@@ -619,8 +693,9 @@ contains
       yk1(i) = h*f(i)
       yk2(i) = y(i) + 0.75_wp * yk1(i)
     end do
+    ires = 0
     call fun(n,yk2,f,ires)
-    if (ires < 0) return
+    if (ires /= 0) return
     nfev = nfev + 1
     call back(df,f,ipiv)
     nsol = nsol + 1
