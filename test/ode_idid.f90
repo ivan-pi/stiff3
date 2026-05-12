@@ -1,3 +1,9 @@
+! This driver exercises the non-success `idid` exit paths with deliberately
+! constructed problems. The LU-failure case uses a 1x1 system whose shifted
+! Jacobian matrix is exactly singular for the first full step, while the
+! underflow case uses a tiny interval at a large abscissa together with a
+! highly oscillatory linear system so repeated bisections exhaust floating-
+! point resolution and trigger the step-size underflow guard.
 program ode_idid
 
   use stiff3_solver, only: stiff3, wp => stiff3_wp

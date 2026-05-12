@@ -423,7 +423,6 @@ contains
     ! exit main loop
 
       if (icon == 1) then
-        idid = 0
         h0 = h
         x = x_current
         if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
