@@ -91,7 +91,10 @@ contains
       !! User supplied subprogram for function evaluation.
     procedure(jacobian_sub) :: jac
       !! User supplied subprogram for evaluation of the Jacobian.
-    real(wp), intent(in) :: x, xend
+    real(wp), intent(inout) :: x
+      !! Independent variable at the start of integration. On exit it is the
+      !! current integration point (`xend` on successful completion).
+    real(wp), intent(in) :: xend
       !! Limits of the independent variable between which the differential
       !! equation is solved.
     real(wp), intent(inout) :: h0
@@ -102,7 +105,7 @@ contains
       !! Tolerance parameters.
     real(wp), intent(inout) :: y(n)
       !! Vector of dependent variables at `x`. On exit `y` is the vector of
-      !! dependent variables at `xend`.
+      !! dependent variables at the returned `x`.
     procedure(output_sub), optional :: solout
       !! User supplied subprogram for output.
     integer, intent(out), optional :: stats(6)
@@ -135,7 +138,10 @@ contains
       !! User supplied subprogram for function evaluation.
     procedure(jacobian_sub) :: jac
       !! User supplied subprogram for evaluation of the Jacobian.
-    real(wp), intent(in) :: x, xend
+    real(wp), intent(inout) :: x
+      !! Independent variable at the start of integration. On exit it is the
+      !! current integration point (`xend` on successful completion).
+    real(wp), intent(in) :: xend
       !! Limits of the independent variable between which the differential
       !! equation is solved.
     real(wp), intent(inout) :: h0
@@ -146,7 +152,7 @@ contains
       !! Tolerance parameters.
     real(wp), intent(inout) :: y(n)
       !! Vector of dependent variables at `x`. On exit `y` is the vector of
-      !! dependent variables at `xend`.
+      !! dependent variables at the returned `x`.
     real(wp), intent(inout) :: rwork(n*(7 + 2*n))
       !! Real workspace of size `n*(7 + 2*n)`.
     integer, intent(inout) :: iwork(n)
@@ -183,7 +189,10 @@ contains
     integer, intent(in) :: n
     procedure(rhs_sub) :: fun
     procedure(jacobian_sub) :: jac
-    real(wp), intent(in) :: x, xend
+    real(wp), intent(inout) :: x
+      !! Independent variable at the start of integration. On exit it is the
+      !! current integration point (`xend` on successful completion).
+    real(wp), intent(in) :: xend
     real(wp), intent(inout) :: h0
     real(wp), intent(in) :: eps, w(n)
     real(wp), intent(inout) :: y(n)
@@ -227,6 +236,7 @@ contains
       call solout(1,x_current,x_current,y,0,0.0_wp,irtrn)
       if (irtrn < 0) then
         h0 = h
+        x = x_current
         if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
         return
       end if
@@ -357,6 +367,7 @@ contains
         call solout(nacc+1,xold,x_current,y,iha,qa,irtrn)
         if (irtrn < 0) then
           h0 = h
+          x = x_current
           if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
           return
         end if
@@ -366,6 +377,7 @@ contains
 
       if (icon == 1) then
         h0 = h
+        x = x_current
         if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
         return
       end if

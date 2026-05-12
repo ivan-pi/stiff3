@@ -5,7 +5,7 @@ program ode_workspace
   implicit none
 
   integer, parameter :: n = 2
-  real(wp) :: y_auto(n), y_work(n), w(n), x0, x1, h0, eps
+  real(wp) :: y_auto(n), y_work(n), w(n), x0, x1, h0, eps, x
   real(wp), allocatable :: rwork(:)
   integer, allocatable :: iwork(:)
   integer :: stats_auto(6), stats_work(6)
@@ -21,10 +21,20 @@ program ode_workspace
   allocate(rwork(n*(7 + 2*n)))
   allocate(iwork(n))
 
-  call stiff3(n,fun,x0,y_auto,x1,jac,h0,eps,w,stats=stats_auto)
+  x = x0
+  call stiff3(n,fun,x,y_auto,x1,jac,h0,eps,w,stats=stats_auto)
+  if (x /= x1) then
+    print '(A,ES12.4,A,ES12.4)', 'auto workspace x mismatch: ', x, ' expected ', x1
+    error stop 1
+  end if
 
   h0 = 0.02_wp
-  call stiff3(n,fun,x0,y_work,x1,jac,h0,eps,w,rwork,iwork,stats=stats_work)
+  x = x0
+  call stiff3(n,fun,x,y_work,x1,jac,h0,eps,w,rwork,iwork,stats=stats_work)
+  if (x /= x1) then
+    print '(A,ES12.4,A,ES12.4)', 'explicit workspace x mismatch: ', x, ' expected ', x1
+    error stop 1
+  end if
 
   if (any(y_auto /= y_work)) then
     print '(A,2(1X,ES12.4),A,2(1X,ES12.4))', &
