@@ -9,7 +9,7 @@ program three_equation_system
   real(wp), parameter :: k2 = 1000.0_wp
   real(wp), parameter :: k3 = 2500.0_wp
   real(wp) :: y(n), w(n), x0, x1, h0, eps
-  integer :: stats(6)
+  integer :: idid, stats(6)
 
 ! initial value
   y = [1.0_wp, 1.0_wp, 0.0_wp]
@@ -22,7 +22,11 @@ program three_equation_system
   x0 = 0.0_wp
   x1 = 50.0_wp
 
-  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,stats=stats)
+  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,idid,stats=stats)
+  if (idid /= 0) then
+    print '(A,I0)', 'stiff3 failed with idid=', idid
+    error stop 1
+  end if
   print '(A,3(I0,1X))', 'accepted rejected nfev: ', stats(1), stats(2), stats(3)
   print '(A,3(I0,1X))', 'njev nlu nsol: ', stats(4), stats(5), stats(6)
 

@@ -21,6 +21,10 @@ program lorenz
   x1 = 40.0_wp
 ! integrate system of ODEs
   call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,idid,solout=out)
+  if (idid /= 0) then
+    print '(A,I0)', 'stiff3 failed with idid=', idid
+    error stop 1
+  end if
 
 contains
 

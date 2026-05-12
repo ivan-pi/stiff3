@@ -18,6 +18,10 @@ program ode_stiff_linear
   eps = 1.0e-10_wp
 
   call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,idid)
+  if (idid /= 0) then
+    print '(A,I0)', 'stiff3 failed with idid=', idid
+    error stop 1
+  end if
 
   exact2 = exp(x1)
   exact1 = (1000.0_wp/1001.0_wp)*exact2 + (1002.0_wp/1001.0_wp)*exp(-1000.0_wp*x1)

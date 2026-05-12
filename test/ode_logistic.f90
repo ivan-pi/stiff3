@@ -18,6 +18,10 @@ program ode_logistic
   eps = 1.0e-10_wp
 
   call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,idid)
+  if (idid /= 0) then
+    print '(A,I0)', 'stiff3 failed with idid=', idid
+    error stop 1
+  end if
 
   c = (1.0_wp - y0)/y0
   exact = 1.0_wp/(1.0_wp + c*exp(-x1))

@@ -65,11 +65,16 @@ contains
     real(wp), intent(out), optional :: err, elapsed
 
     real(wp) :: h0, t0, t1
+    integer :: idid
 
     y = y0
     h0 = h0_initial
     call cpu_time(t0)
-    call stiff3(n, fun, x0, y, x1, jac, h0, eps, w, stats=stats)
+    call stiff3(n, fun, x0, y, x1, jac, h0, eps, w, idid, stats=stats)
+    if (idid /= 0) then
+      print '(A,I0)', 'stiff3 failed with idid=', idid
+      error stop 1
+    end if
     call cpu_time(t1)
     if (present(err)) err = max_relative_error(y, yref)
     if (present(elapsed)) elapsed = max(t1 - t0, 0.0_wp)

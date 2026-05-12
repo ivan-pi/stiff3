@@ -70,7 +70,7 @@ contains
     real(wp), intent(out) :: cpu_time_seconds
     character(len=*), intent(in), optional :: solution_filename
 
-    integer :: ios
+    integer :: idid, ios
     real(wp), parameter :: min_cpu_time = 1.0e-12_wp
     real(wp) :: cpu_start, cpu_end, h0
     logical :: write_solution
@@ -86,7 +86,11 @@ contains
     end if
 
     call cpu_time(cpu_start)
-    call stiff3(n, fun, x0, y, x1, jac, h0, eps, w, solout=output_solution, stats=stats)
+    call stiff3(n, fun, x0, y, x1, jac, h0, eps, w, idid, solout=output_solution, stats=stats)
+    if (idid /= 0) then
+      print '(A,I0)', 'stiff3 failed with idid=', idid
+      error stop 1
+    end if
     call cpu_time(cpu_end)
     cpu_time_seconds = max(min_cpu_time, cpu_end - cpu_start)
 

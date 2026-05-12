@@ -34,6 +34,10 @@ program ode_dense_output_integral
   xfixed_next = x0 + dx_fixed
 
   call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,rwork,iwork,idid,solout=accumulate_integrals,hmax=hmax)
+  if (idid /= 0) then
+    print '(A,I0)', 'stiff3 failed with idid=', idid
+    error stop 1
+  end if
 
   if (nsteps_checked < 2) then
     print '(A,I0)', 'expected integral test to exercise multiple steps, got ', nsteps_checked

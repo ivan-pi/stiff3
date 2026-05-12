@@ -18,6 +18,10 @@ program ode_linear_decay
   eps = 1.0e-10_wp
 
   call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,idid)
+  if (idid /= 0) then
+    print '(A,I0)', 'stiff3 failed with idid=', idid
+    error stop 1
+  end if
 
   exact = exp(-lambda*x1)
   err = abs(y(1) - exact)

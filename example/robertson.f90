@@ -69,6 +69,10 @@ program main
   irtrn = 0
   call output(0,x0,x0,y,0,0.0_wp,irtrn)
   call stiff3(n,fun,x0,y,x1,dfun,h0,eps,w,idid,solout=output)
+  if (idid /= 0) then
+    print '(A,I0)', 'stiff3 failed with idid=', idid
+    error stop 1
+  end if
 
 contains
 

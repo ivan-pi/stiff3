@@ -19,6 +19,10 @@ program ode_robertson_invariants
   eps = 1.0e-7_wp
 
   call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,idid)
+  if (idid /= 0) then
+    print '(A,I0)', 'stiff3 failed with idid=', idid
+    error stop 1
+  end if
 
   mass = sum(y)
   if (abs(mass - 1.0_wp) > sum_tol) then

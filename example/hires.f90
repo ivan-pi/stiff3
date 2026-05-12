@@ -68,11 +68,16 @@ contains
 
     real(wp), parameter :: min_cpu_time = 1.0e-12_wp
     real(wp) :: h0, cpu_start, cpu_end
+    integer :: idid
 
     y = y0
     h0 = h0_initial
     call cpu_time(cpu_start)
-    call stiff3(n, fun, x0, y, x1, jac, h0, eps, w, stats=stats)
+    call stiff3(n, fun, x0, y, x1, jac, h0, eps, w, idid, stats=stats)
+    if (idid /= 0) then
+      print '(A,I0)', 'stiff3 failed with idid=', idid
+      error stop 1
+    end if
     call cpu_time(cpu_end)
     if (present(err)) err = max_relative_error(y, yref)
     if (present(cpu_time_seconds)) cpu_time_seconds = max(min_cpu_time, cpu_end - cpu_start)

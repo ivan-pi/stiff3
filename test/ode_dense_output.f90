@@ -25,6 +25,10 @@ program ode_dense_output
   yprev = y
 
   call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,rwork,iwork,idid,solout=check_dense_output,hmax=hmax)
+  if (idid /= 0) then
+    print '(A,I0)', 'stiff3 failed with idid=', idid
+    error stop 1
+  end if
 
   if (nsteps_checked < 2) then
     print '(A,I0)', 'expected dense-output test to exercise multiple steps, got ', nsteps_checked

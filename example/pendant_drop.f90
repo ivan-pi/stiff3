@@ -30,6 +30,10 @@ program pendant_drop
 
 ! integrate Young-Laplace system
   call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,idid,solout=out,stats=stats)
+  if (idid /= 0) then
+    print '(A,I0)', 'stiff3 failed with idid=', idid
+    error stop 1
+  end if
   print '(A,3(I0,1X))', 'accepted rejected nfev: ', stats(1), stats(2), stats(3)
   print '(A,3(I0,1X))', 'njev nlu nsol: ', stats(4), stats(5), stats(6)
 

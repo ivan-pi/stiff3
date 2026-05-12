@@ -24,6 +24,10 @@ program ode_order
     h0 = hs(i)/2.0_wp
 
     call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,idid)
+    if (idid /= 0) then
+      print '(A,I0)', 'stiff3 failed with idid=', idid
+      error stop 1
+    end if
     err(i) = max(abs(y(1)-cos(x1)),abs(y(2)+sin(x1)))
   end do
 

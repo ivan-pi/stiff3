@@ -49,6 +49,10 @@ program ode_stats
   jac_calls = 0
 
   call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,idid,stats=stats)
+  if (idid /= 0) then
+    print '(A,I0)', 'stiff3 failed with idid=', idid
+    error stop 1
+  end if
 
   associate(nacc => stats(1), nrej => stats(2), nfev => stats(3), njev => stats(4), nlu => stats(5), nsol => stats(6))
     if (nfev /= fun_calls .or. njev /= jac_calls) then
