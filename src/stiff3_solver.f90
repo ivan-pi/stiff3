@@ -190,6 +190,8 @@ contains
     procedure(rhs_sub) :: fun
     procedure(jacobian_sub) :: jac
     real(wp), intent(inout) :: x
+      !! Independent variable at the start of integration. On exit it is the
+      !! current integration point (`xend` on successful completion).
     real(wp), intent(in) :: xend
     real(wp), intent(inout) :: h0
     real(wp), intent(in) :: eps, w(n)

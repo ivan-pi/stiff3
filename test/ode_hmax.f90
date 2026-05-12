@@ -74,9 +74,13 @@ program ode_hmax
     error stop 1
   end if
 
-  if ((x <= x0 + tol_x) .or. (x >= x1 - tol_x)) then
-    print '(A,ES12.4,A,2(ES12.4,1X))', 'interrupt run x should be interior to interval; got ', x, &
-      ' bounds ', x0, x1
+  if (x <= x0 + tol_x) then
+    print '(A,ES12.4,A,ES12.4)', 'interrupt run x too close to start: ', x, ' start ', x0
+    error stop 1
+  end if
+
+  if (x >= x1 - tol_x) then
+    print '(A,ES12.4,A,ES12.4)', 'interrupt run x too close to end: ', x, ' end ', x1
     error stop 1
   end if
 
