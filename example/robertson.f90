@@ -48,6 +48,7 @@ program main
   integer, parameter :: n = 3
   real(wp) :: y(n), w(n)
   real(wp) :: h0, eps, x0, x1
+  integer :: idid
 
 
 ! initial value
@@ -65,7 +66,8 @@ program main
   x0 = 0.0_wp
   x1 = 10.0_wp
 
-  call stiff3(n,fun,x0,y,x1,dfun,h0,eps,w,solout=output)
+  call stiff3(n,fun,x0,y,x1,dfun,h0,eps,w,idid,solout=output)
+  if (idid /= 0) error stop 'stiff3 failed in robertson example'
 
 contains
 

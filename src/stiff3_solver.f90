@@ -84,7 +84,7 @@ contains
 
   !> Semi-implicit Runge-Kutta integrator routine
   !
-  subroutine stiff3_auto(n,fun,x,y,xend,jac,h0,eps,w,solout,stats,hmax)
+  subroutine stiff3_auto(n,fun,x,y,xend,jac,h0,eps,w,idid,solout,stats,hmax)
     integer, intent(in) :: n
       !! Number of equations to be integrated.
     procedure(rhs_sub) :: fun
@@ -103,6 +103,9 @@ contains
       !! or the suggested step size at an interrupted callback return.
     real(wp), intent(in) :: eps, w(n)
       !! Tolerance parameters.
+    integer, intent(out) :: idid
+      !! Solver exit flag: `0` success, `-1` LU factorization failure,
+      !! `-2` user interrupt from `solout`, `-3` step-size underflow.
     real(wp), intent(inout) :: y(n)
       !! Vector of dependent variables at `x`. On exit `y` is the vector of
       !! dependent variables at the returned `x`.
@@ -121,7 +124,7 @@ contains
     integer :: ip(n)
       !! Workspace for the pivot array
 
-    call stiff3_core(n,fun,x,y,xend,jac,h0,eps,w, &
+    call stiff3_core(n,fun,x,y,xend,jac,h0,eps,w,idid, &
                      yk1=yk1,yk2=yk2,ya=ya,yold=yold,yold1=yold1, &
                      f=f,fold=fold,df=df,dfold=dfold,ip=ip, &
                      solout=solout,stats=stats,hmax=hmax)
@@ -131,7 +134,7 @@ contains
 
   !> Semi-implicit Runge-Kutta integrator routine with explicit workspace
   !
-  subroutine stiff3_work(n,fun,x,y,xend,jac,h0,eps,w,rwork,iwork,solout,stats,hmax)
+  subroutine stiff3_work(n,fun,x,y,xend,jac,h0,eps,w,rwork,iwork,idid,solout,stats,hmax)
     integer, intent(in) :: n
       !! Number of equations to be integrated.
     procedure(rhs_sub) :: fun
@@ -157,6 +160,9 @@ contains
       !! Real workspace of size `n*(7 + 2*n)`.
     integer, intent(inout) :: iwork(n)
       !! Integer workspace of size `n`.
+    integer, intent(out) :: idid
+      !! Solver exit flag: `0` success, `-1` LU factorization failure,
+      !! `-2` user interrupt from `solout`, `-3` step-size underflow.
     procedure(output_sub), optional :: solout
       !! User supplied subprogram for output.
     integer, intent(out), optional :: stats(6)
@@ -165,7 +171,7 @@ contains
       !! Maximum absolute half-step size. If absent or zero, defaults to
       !! `abs(xend - x)`.
 
-    call stiff3_core(n,fun,x,y,xend,jac,h0,eps,w, &
+    call stiff3_core(n,fun,x,y,xend,jac,h0,eps,w,idid, &
                      yk1   = rwork(1), &
                      yk2   = rwork(n+1), &
                      ya    = rwork(2*n+1), &
@@ -183,7 +189,7 @@ contains
 
   !> Semi-implicit Runge-Kutta integrator routine core implementation
   !
-  subroutine stiff3_core(n,fun,x,y,xend,jac,h0,eps,w, &
+  subroutine stiff3_core(n,fun,x,y,xend,jac,h0,eps,w,idid, &
                          yk1,yk2,ya,yold,yold1,f,fold,df,dfold,ip, &
                          solout,stats,hmax)
     integer, intent(in) :: n
@@ -195,6 +201,7 @@ contains
     real(wp), intent(in) :: xend
     real(wp), intent(inout) :: h0
     real(wp), intent(in) :: eps, w(n)
+    integer, intent(out) :: idid
     real(wp), intent(inout) :: y(n)
     real(wp), intent(inout) :: yk1(n), yk2(n), ya(n), yold(n), yold1(n), f(n), fold(n)
     real(wp), intent(inout) :: df(n,n), dfold(n,n)
@@ -203,7 +210,7 @@ contains
     integer, intent(out), optional :: stats(6)
     real(wp), intent(in), optional :: hmax
 
-    integer :: icon, iha, i, j, irtrn
+    integer :: icon, iha, i, j, irtrn, lu_info
     integer :: nfev, njev, nlu, nacc, nrej, nsol
     real(wp) :: x_current, xold, h, e, es, q, qa, hmax_used
     logical :: have_f
@@ -230,11 +237,13 @@ contains
     nrej = 0
     nsol = 0
     have_f = .false.
+    idid = 0
 
     if (present(solout)) then
       irtrn = 0
       call solout(1,x_current,x_current,y,0,0.0_wp,irtrn)
       if (irtrn < 0) then
+        idid = -2
         h0 = h
         x = x_current
         if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
@@ -281,7 +290,14 @@ contains
 
     ! perform full integration step
 
-      call sirk3(n,fun,ip,f,y,yk1,yk2,df,2*h,nfev,nlu,nsol)
+      call sirk3(n,fun,ip,f,y,yk1,yk2,df,2*h,nfev,nlu,nsol,lu_info)
+      if (lu_info /= 0) then
+        idid = -1
+        h0 = h
+        x = x_current
+        if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
+        return
+      end if
 
       do i = 1, n
         ya(i) = y(i)
@@ -299,7 +315,17 @@ contains
       inner: do
         iha = iha + 1
 
-        call sirk3(n,fun,ip,f,y,yk1,yk2,df,h,nfev,nlu,nsol)
+        call sirk3(n,fun,ip,f,y,yk1,yk2,df,h,nfev,nlu,nsol,lu_info)
+        if (lu_info /= 0) then
+          idid = -1
+          y = yold
+          f = fold
+          df = dfold
+          h0 = h
+          x = x_current
+          if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
+          return
+        end if
         call fun(n,y,f)
         nfev = nfev + 1
         call jac(n,y,df)
@@ -307,7 +333,17 @@ contains
 
         yold1 = y
 
-        call sirk3(n,fun,ip,f,y,yk1,yk2,df,h,nfev,nlu,nsol)
+        call sirk3(n,fun,ip,f,y,yk1,yk2,df,h,nfev,nlu,nsol,lu_info)
+        if (lu_info /= 0) then
+          idid = -1
+          y = yold
+          f = fold
+          df = dfold
+          h0 = h
+          x = x_current
+          if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
+          return
+        end if
 
       ! half step integration finished
       ! compute deviation and compare with tolerance
@@ -337,6 +373,16 @@ contains
         h = h/2.0_wp
         icon = 0
         nrej = nrej + 1
+        if (abs(h) <= spacing(x_current)) then
+          idid = -3
+          y = yold
+          f = fold
+          df = dfold
+          h0 = h
+          x = x_current
+          if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
+          return
+        end if
 
       end do inner
 
@@ -366,6 +412,7 @@ contains
         irtrn = 0
         call solout(nacc+1,xold,x_current,y,iha,qa,irtrn)
         if (irtrn < 0) then
+          idid = -2
           h0 = h
           x = x_current
           if (present(stats)) stats = [nacc, nrej, nfev, njev, nlu, nsol]
@@ -466,7 +513,7 @@ contains
 
   !> Single-step semi-implicit integration
   !
-  subroutine sirk3(n,fun,ipiv,f,y,yk1,yk2,df,h,nfev,nlu,nsol)
+  subroutine sirk3(n,fun,ipiv,f,y,yk1,yk2,df,h,nfev,nlu,nsol,info)
     integer, intent(in) :: n
       !! Size of the system of ODEs
     procedure(rhs_sub) :: fun
@@ -491,6 +538,8 @@ contains
       !! Number of LU decompositions
     integer, intent(inout) :: nsol
       !! Number of linear-system solves (back substitutions)
+    integer, intent(out) :: info
+      !! LU factorization status from LAPACK `*getrf`
 
     integer :: i
 
@@ -511,7 +560,8 @@ contains
     !
     ! perform triangular decomposition and evaluate k1
     !
-    call lu(df,ipiv)
+    call lu(df,ipiv,info)
+    if (info /= 0) return
     nlu = nlu + 1
     call back(df,f,ipiv)
     nsol = nsol + 1

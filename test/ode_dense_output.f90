@@ -10,7 +10,7 @@ program ode_dense_output
   real(wp), parameter :: hmax = 0.05_wp
   real(wp) :: y(n), w(n), x0, x1, h0, eps
   real(wp) :: rwork(n*(7 + 2*n))
-  integer :: iwork(n)
+  integer :: iwork(n), idid
   integer :: nsteps_checked
   real(wp) :: yprev(n), xprev
 
@@ -24,7 +24,11 @@ program ode_dense_output
   xprev = x0
   yprev = y
 
-  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,rwork,iwork,solout=check_dense_output,hmax=hmax)
+  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,rwork,iwork,idid,solout=check_dense_output,hmax=hmax)
+  if (idid /= 0) then
+    print '(A,I0)', 'expected successful solve, got idid=', idid
+    error stop 1
+  end if
 
   if (nsteps_checked < 2) then
     print '(A,I0)', 'expected dense-output test to exercise multiple steps, got ', nsteps_checked

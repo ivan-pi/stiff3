@@ -7,7 +7,7 @@ program pendant_drop
   integer, parameter :: n = 3
   real(wp) :: y(n), w(n), x0, x1, h0, eps
   real(wp) :: pL, drho, ds
-  integer :: stats(6)
+  integer :: stats(6), idid
 
 ! dimensionless pressure offset and density difference
   pL = 3.3888_wp
@@ -29,7 +29,8 @@ program pendant_drop
   w = 1.0_wp
 
 ! integrate Young-Laplace system
-  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,solout=out,stats=stats)
+  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,idid,solout=out,stats=stats)
+  if (idid /= 0) error stop 'stiff3 failed in pendant_drop example'
   print '(A,3(I0,1X))', 'accepted rejected nfev: ', stats(1), stats(2), stats(3)
   print '(A,3(I0,1X))', 'njev nlu nsol: ', stats(4), stats(5), stats(6)
 

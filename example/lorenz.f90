@@ -7,6 +7,7 @@ program lorenz
   integer, parameter :: n = 3
   real(wp), parameter :: sigma = 10.0_wp, rho = 28.0_wp, beta = 8.0_wp/3.0_wp
   real(wp) :: y(n), w(n), x0, x1, h0, eps
+  integer :: idid
 
 ! initial value
   y = [1.0_wp, 1.0_wp, 1.0_wp]
@@ -19,7 +20,8 @@ program lorenz
   x0 = 0.0_wp
   x1 = 40.0_wp
 ! integrate system of ODEs
-  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,solout=out)
+  call stiff3(n,fun,x0,y,x1,jac,h0,eps,w,idid,solout=out)
+  if (idid /= 0) error stop 'stiff3 failed in lorenz example'
 
 contains
 
