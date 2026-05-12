@@ -121,7 +121,8 @@ program ode_hmax
     error stop 1
   end if
   if (abs(y_rhs_stop(1) - y_last_rhs_accepted(1)) > tol) then
-    print '(A,ES12.4,A,ES12.4)', 'rhs interrupt run y not last accepted value: ', y_rhs_stop(1), ' expected ', y_last_rhs_accepted(1)
+    print '(A,ES12.4,A,ES12.4)', &
+      'rhs interrupt run y not last accepted value: ', y_rhs_stop(1), ' expected ', y_last_rhs_accepted(1)
     error stop 1
   end if
   if (x <= x0 + tol_x) then
