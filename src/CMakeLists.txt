@@ -1,6 +1,7 @@
 add_library(stiff3
   stiff3_linalg.f90
   stiff3_solver.f90
+  trbdf2.f90
 )
 
 target_link_libraries(stiff3 PUBLIC ${LAPACK_LIBRARIES})

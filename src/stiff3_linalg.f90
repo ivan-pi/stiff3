@@ -8,12 +8,13 @@ module stiff3_linalg
 
   public :: lu, back
 
+  public :: lapack_getrf, lapack_getrs
+
   !> Program for decomposing a matrix A to a lower and an upper
   !> triangular form $ A = LU$.
   interface lu
     module procedure lu_sp, lu_dp
   end interface
-
 
   !> Back substitution algorithm for solution to $LUx = b$.
   !> Used together with procedure `lu`, to calculate the solution
