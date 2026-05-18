@@ -176,7 +176,7 @@ The specific three-stage semi-implicit Runge-Kutta method (SIRK3) used by `stiff
 
 Related references by Michelsen that predate the Villadsen & Michelsen (1978) textbook include:
 
-> Michelsen, M. L. (1976). An efficient general purpose method for the intergration of stiff ordinary differential equations. *AIChE Journal*, 22(3), 594–597. https://doi.org/10.1002/aic.690220327
+> Michelsen, M. L. (1976). An efficient general purpose method for the integration of stiff ordinary differential equations. *AIChE Journal*, 22(3), 594–597. https://doi.org/10.1002/aic.690220327
 >
 > Michelsen, M. L. (1977). Application of semi-implicit runge—kutta methods for integration of ordinary and partial differential equations. *The Chemical Engineering Journal*, 14(2), 107–112. https://doi.org/10.1016/0300-9467(77)85005-3
 
@@ -186,7 +186,7 @@ The adaptive stepsize selection strategy is described in Villadsen & Michelsen (
 
 A comparison of STIFF3 with Gear's method (Hindmarsh and Gear) was published in:
 
-> Weimer, A. W., & Clough, D. E. (1979). A critical evaluation of the semiimplicit Runge‐Kutta methods for stiff systems. *AIChE Journal*, 25(4), 730–732. https://doi.org/10.1002/aic.690250424
+> Weimer, A. W., & Clough, D. E. (1979). A critical evaluation of the semi-implicit Runge‐Kutta methods for stiff systems. *AIChE Journal*, 25(4), 730–732. https://doi.org/10.1002/aic.690250424
 
 The two tolerance parameters `eps` and `w` together control how accurately the solution is tracked:
 
