@@ -204,8 +204,15 @@ The integer exit flag `idid` reports solver status:
 
 - `0` — successful completion at `x1`
 - `-1` — LU factorization failed because the Jacobian system matrix was singular
-- `-2` — integration interrupted by a user callback (`ires < 0` in `fun` or `irtrn < 0` in `solout`)
+- `-2` — integration interrupted by a user callback (`ires < -1` in `fun` or `irtrn < 0` in `solout`)
 - `-3` — step-size underflow occurred during bisection (`abs(h) <= spacing(x_current)`)
+- `-4` — too many physical rejections signaled by `fun` (`ires = -1`, limit exceeded)
+
+The `fun` callback uses a DASSL-like `ires` contract:
+
+- `ires = 0` — normal return
+- `ires = -1` — reject the current trial step and retry with halved step size
+- `ires < -1` — interrupt integration and return with `idid = -2`
 
 When using this explicit-workspace overload together with `solout`, accepted-step dense output is available through the generic interface `stiff3_interp`:
 

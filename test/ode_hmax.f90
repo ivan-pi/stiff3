@@ -140,7 +140,7 @@ contains
     real(wp), intent(inout) :: f(n)
     integer, intent(inout) :: ires
     f(1) = -y(1)
-    if (enable_rhs_interrupt .and. y(1) < rhs_stop_threshold) ires = -1
+    if (enable_rhs_interrupt .and. y(1) < rhs_stop_threshold) ires = -2
   end subroutine
 
   subroutine jac(n,y,df)
